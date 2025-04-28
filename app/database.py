@@ -4,6 +4,7 @@ from fastapi import Depends
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.addresses.models import Address
+from app.custom_fields.models import CustomField
 
 connect_args = {"check_same_thread": False}
 engine = create_engine("sqlite:///database.db", connect_args=connect_args)
