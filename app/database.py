@@ -5,9 +5,10 @@ from sqlmodel import Session, SQLModel, create_engine
 
 from app.addresses.models import Address
 from app.custom_fields.models import CustomField
+from app.settings import DATABASE_URL
 
 connect_args = {"check_same_thread": False}
-engine = create_engine("sqlite:///database.db", connect_args=connect_args)
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 
 
 def create_db_and_tables():
