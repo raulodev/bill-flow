@@ -1,11 +1,16 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from fastapi.openapi.utils import get_openapi
+from fastapi.openapi.docs import (
+    get_redoc_html,
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
+from fastapi.staticfiles import StaticFiles
 
+from app.accounts.api import router as account_router
 from app.addresses.api import router as address_router
 from app.custom_fields.api import router as custom_fields_router
-from app.accounts.api import router as account_router
 from app.database.session import create_db_and_tables
 
 
@@ -15,22 +20,42 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+    title="Bill Flow API",
+    version="1.0.0",
+)
 
 
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-    openapi_schema = get_openapi(
-        title="Bill Flow API",
-        version="1.0.0",
-        routes=app.routes,
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - Swagger UI",
+        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+        swagger_js_url="/static/swagger-ui-bundle.js",
+        swagger_css_url="/static/swagger-ui.css",
     )
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
 
 
-app.openapi = custom_openapi
+@app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+async def swagger_ui_redirect():
+    return get_swagger_ui_oauth2_redirect_html()
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - ReDoc",
+        redoc_js_url="/static/redoc.standalone.js",
+    )
+
 
 app.include_router(address_router, prefix="/v1", tags=["Addresses"])
 app.include_router(custom_fields_router, prefix="/v1", tags=["Custom Fields"])
