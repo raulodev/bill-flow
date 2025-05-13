@@ -56,6 +56,10 @@ class Address(AddressBase, table=True):
     )
 
 
+class AddressWithAccount(AddressBase):
+    account: Optional["Account"] = None
+
+
 class CustomFieldBase(SQLModel):
     name: str = Field(max_length=64, index=True)
     value: str = Field(max_length=255)

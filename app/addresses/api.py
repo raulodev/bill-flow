@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from sqlmodel import select
 
-from app.database.models import Address, AddressBase
+from app.database.models import Address, AddressBase, AddressWithAccount
 from app.database.session import SessionDep
 from app.exceptions import NotFoundError
 
@@ -30,7 +30,7 @@ def read_addresses(
 
 
 @router.get("/{address_id}")
-def read_address(address_id: int, session: SessionDep) -> Address:
+def read_address(address_id: int, session: SessionDep) -> AddressWithAccount:
     address = session.get(Address, address_id)
     if not address:
         raise NotFoundError()
