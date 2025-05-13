@@ -76,3 +76,7 @@ class CustomField(CustomFieldBase, table=True):
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+
+class CustomFieldWithAccount(CustomFieldBase):
+    account: Optional["Account"] = None

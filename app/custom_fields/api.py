@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from sqlmodel import select
 
-from app.database.models import CustomField, CustomFieldBase
+from app.database.models import CustomField, CustomFieldBase, CustomFieldWithAccount
 from app.database.session import SessionDep
 from app.exceptions import NotFoundError
 
@@ -32,7 +32,9 @@ def read_custom_fields(
 
 
 @router.get("/{custom_field_id}")
-def read_custom_field(custom_field_id: int, session: SessionDep) -> CustomField:
+def read_custom_field(
+    custom_field_id: int, session: SessionDep
+) -> CustomFieldWithAccount:
     custom_field = session.get(CustomField, custom_field_id)
     if not custom_field:
         raise NotFoundError()
