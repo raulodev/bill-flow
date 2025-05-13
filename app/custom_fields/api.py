@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from sqlmodel import select
 
-from app.custom_fields.models import CustomField, CustomFieldBase
-from app.database import SessionDep
+from app.database.models import CustomField, CustomFieldBase
+from app.database.session import SessionDep
 from app.exceptions import NotFoundError
 
 router = APIRouter(prefix="/customFields")

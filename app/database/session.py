@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import Depends
 from sqlmodel import Session, SQLModel, create_engine
 
-from app.addresses.models import Address
-from app.custom_fields.models import CustomField
+# pylint: disable=unused-import
+from app.database.models import Account, Address, CustomField
 from app.settings import DATABASE_URL
 
 connect_args = {"check_same_thread": False}

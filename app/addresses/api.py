@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import APIRouter, Query
 from sqlmodel import select
 
-from app.addresses.models import Address, AddressBase
-from app.database import SessionDep
+from app.database.models import Address, AddressBase
+from app.database.session import SessionDep
 from app.exceptions import NotFoundError
 
 router = APIRouter(prefix="/addresses")
@@ -12,11 +12,11 @@ router = APIRouter(prefix="/addresses")
 
 @router.post("/")
 async def create_address(address: AddressBase, session: SessionDep) -> Address:
-    db_address = Address.model_validate(address)
-    session.add(db_address)
+    address_db = Address.model_validate(address)
+    session.add(address_db)
     session.commit()
-    session.refresh(db_address)
-    return db_address
+    session.refresh(address_db)
+    return address_db
 
 
 @router.get("/")

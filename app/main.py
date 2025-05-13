@@ -5,7 +5,8 @@ from fastapi.openapi.utils import get_openapi
 
 from app.addresses.api import router as address_router
 from app.custom_fields.api import router as custom_fields_router
-from app.database import create_db_and_tables
+from app.accounts.api import router as account_router
+from app.database.session import create_db_and_tables
 
 
 @asynccontextmanager
@@ -33,3 +34,4 @@ app.openapi = custom_openapi
 
 app.include_router(address_router, prefix="/v1", tags=["Addresses"])
 app.include_router(custom_fields_router, prefix="/v1", tags=["Custom Fields"])
+app.include_router(account_router, prefix="/v1", tags=["Accounts"])
