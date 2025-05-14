@@ -2,12 +2,13 @@ from datetime import date, datetime, timezone
 from typing import List, Optional
 
 from sqlmodel import Field, Relationship, SQLModel
+from pydantic import EmailStr
 
 
 class AccountBase(SQLModel):
     first_name: str | None = Field(max_length=50, index=True)
     last_name: str | None = Field(max_length=50, default=None, index=True)
-    email: str | None = Field(default=None, index=True)
+    email: EmailStr | None = Field(default=None, index=True)
     phone: str | None = Field(max_length=25, default=None, index=True)
     timezone: str | None = Field(max_length=50, default=None)
     external_id: int | None = None
