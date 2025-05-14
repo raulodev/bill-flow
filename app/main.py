@@ -12,12 +12,15 @@ from app.accounts.api import router as account_router
 from app.addresses.api import router as address_router
 from app.custom_fields.api import router as custom_fields_router
 from app.database.session import create_db_and_tables
+from app.scheduler import scheduler
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    scheduler.start()
     yield
+    scheduler.shutdown()
 
 
 app = FastAPI(
