@@ -1,4 +1,5 @@
 from datetime import date, datetime, timezone
+from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
 
@@ -9,7 +10,7 @@ from sqlmodel import Field, Relationship, SQLModel
 class AccountBase(SQLModel):
     first_name: str = Field(max_length=50, index=True)
     last_name: str | None = Field(max_length=50, default=None, index=True)
-    email: EmailStr | None = Field(default=None, index=True)
+    email: EmailStr | None = Field(default=None, index=True, unique=True)
     phone: str | None = Field(max_length=25, default=None, index=True)
     timezone: str | None = Field(max_length=50, default=None)
     external_id: int | None = None
@@ -23,6 +24,10 @@ class Account(AccountBase, table=True):
     address: Optional["Address"] = Relationship(
         back_populates="account", cascade_delete=True
     )
+    credit: Decimal = Field(default=0, decimal_places=3)
+    credit_history: List["CreditHistory"] = Relationship(
+        back_populates="account", cascade_delete=True
+    )
     created: date = Field(default=datetime.now(timezone.utc), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
@@ -30,8 +35,35 @@ class Account(AccountBase, table=True):
 
 
 class AccountWithCustomFieldsAndAddress(AccountBase):
+    credit: Decimal
     custom_fields: List["CustomField"] = []
     address: Optional["Address"] = None
+
+
+class CreditReason(str, Enum):
+    COURTESY = "COURTESY"
+    BILLING_ERROR = "BILLING_ERROR"
+    OTHER = "OTHER"
+
+
+class CreditBase(SQLModel):
+    amount: Decimal = Field(decimal_places=3)
+    comment: str | None = Field(max_length=255, default=None)
+    reason: CreditReason = Field(default=CreditReason.COURTESY)
+    account_id: int
+
+
+class CreditHistory(CreditBase, table=True):
+
+    __tablename__ = "credit_history"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    account: Account = Relationship(back_populates="credit_history")
+    created: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    updated: date = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
 
 
 class AddressBase(SQLModel):
@@ -69,6 +101,9 @@ class CustomFieldBase(SQLModel):
 
 
 class CustomField(CustomFieldBase, table=True):
+
+    __tablename__ = "custom_fields"
+
     id: Optional[int] = Field(default=None, primary_key=True)
     account_id: int | None = Field(
         default=None, foreign_key="account.id", ondelete="CASCADE"
@@ -84,16 +119,10 @@ class CustomFieldWithAccount(CustomFieldBase):
     account: Optional["Account"] = None
 
 
-class Category(str, Enum):
-    BASE = "BASE"
-    ADD_ON = "ADD_ON"
-
-
 class ProductBase(SQLModel):
     name: str = Field(index=True)
     picture: str | None = None
     external_id: int | None = None
-    category: Category = Category.BASE
 
 
 class Product(ProductBase, table=True):
