@@ -2,3 +2,6 @@ fastapi[standard]==0.115.12
 sqlmodel==0.0.24
 python-decouple==3.8
 pytest==8.3.5
+pytz==2025.2
+python-dateutil==2.9.0.post0
+APScheduler==3.11.0
