@@ -1,61 +1,55 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
 
-client = TestClient(app)
+def test_custom_field(client: TestClient):
 
+    # Create
+    data = {"name": "test", "value": "test"}
 
-def test_custom_field():
+    response = client.post("/v1/customFields", json=data)
 
-    with client:
+    json = response.json()
 
-        data = {"name": "test", "value": "test"}
+    assert response.status_code == 200
 
-        # Create
-        response = client.post("/v1/customFields", json=data)
+    custom_field_id = json["id"]
 
-        json = response.json()
+    assert json["name"] == data["name"]
+    assert json["value"] == data["value"]
+    assert json["account_id"] is None
 
-        custom_field_id = json["id"]
+    # List
+    response = client.get("/v1/customFields")
 
-        assert response.status_code == 200
-        assert json["name"] == data["name"]
-        assert json["value"] == data["value"]
-        assert json["account_id"] is None
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
 
-        # List
-        response = client.get("/v1/customFields")
+    # Retrieve 1
+    response = client.get(f"/v1/customFields/{custom_field_id}")
 
-        assert response.status_code == 200
-        assert isinstance(response.json(), list)
+    json = response.json()
 
-        # Retrieve 1
-        response = client.get(f"/v1/customFields/{custom_field_id}")
+    assert response.status_code == 200
+    assert json["name"] == data["name"]
+    assert json["value"] == data["value"]
+    assert json["account_id"] is None
+    assert json["account"] is None
 
-        json = response.json()
+    # Update
+    data = {
+        "name": "test 2",
+        "value": "test 2",
+    }
 
-        assert response.status_code == 200
-        assert json["name"] == data["name"]
-        assert json["value"] == data["value"]
-        assert json["account_id"] is None
-        assert json["account"] is None
+    response = client.put(f"/v1/customFields/{custom_field_id}", json=data)
 
-        # Update
+    json = response.json()
 
-        data = {
-            "name": "test 2",
-            "value": "test 2",
-        }
+    assert response.status_code == 200
+    assert json["name"] == data["name"]
+    assert json["value"] == data["value"]
 
-        response = client.put(f"/v1/customFields/{custom_field_id}", json=data)
+    # Delete
+    response = client.delete(f"/v1/customFields/{custom_field_id}")
 
-        json = response.json()
-
-        assert response.status_code == 200
-        assert json["name"] == data["name"]
-        assert json["value"] == data["value"]
-
-        # Delete
-        response = client.delete(f"/v1/customFields/{custom_field_id}")
-
-        assert response.status_code == 200
+    assert response.status_code == 200
