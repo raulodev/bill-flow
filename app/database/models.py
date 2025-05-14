@@ -1,12 +1,13 @@
 from datetime import date, datetime, timezone
+from enum import Enum
 from typing import List, Optional
 
-from sqlmodel import Field, Relationship, SQLModel
 from pydantic import EmailStr
+from sqlmodel import Field, Relationship, SQLModel
 
 
 class AccountBase(SQLModel):
-    first_name: str | None = Field(max_length=50, index=True)
+    first_name: str = Field(max_length=50, index=True)
     last_name: str | None = Field(max_length=50, default=None, index=True)
     email: EmailStr | None = Field(default=None, index=True)
     phone: str | None = Field(max_length=25, default=None, index=True)
@@ -34,13 +35,13 @@ class AccountWithCustomFieldsAndAddress(AccountBase):
 
 
 class AddressBase(SQLModel):
-    street_number1: str | None = Field(max_length=50, default=None)
-    street_number2: str | None = Field(max_length=50, default=None)
-    city: str | None = Field(max_length=50, default=None)
-    postal_code: str | None = Field(max_length=50, default=None)
-    state: str | None = Field(max_length=100, default=None)
-    province: str | None = Field(max_length=100, default=None)
-    country: str | None = Field(max_length=100, default=None)
+    street_number1: str | None = Field(max_length=50, default=None, index=True)
+    street_number2: str | None = Field(max_length=50, default=None, index=True)
+    city: str | None = Field(max_length=50, default=None, index=True)
+    postal_code: str | None = Field(max_length=50, default=None, index=True)
+    state: str | None = Field(max_length=100, default=None, index=True)
+    province: str | None = Field(max_length=100, default=None, index=True)
+    country: str | None = Field(max_length=100, default=None, index=True)
     country_id: int | None = None
     account_id: int | None = None
 
@@ -81,3 +82,30 @@ class CustomField(CustomFieldBase, table=True):
 
 class CustomFieldWithAccount(CustomFieldBase):
     account: Optional["Account"] = None
+
+
+class Category(str, Enum):
+    BASE = "BASE"
+    ADD_ON = "ADD_ON"
+
+
+class ProductBase(SQLModel):
+    name: str = Field(index=True)
+    picture: str | None = None
+    external_id: int | None = None
+    category: Category = Category.BASE
+
+
+class Product(ProductBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    is_deleted: bool = Field(default=False)
+    created: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    updated: date = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class ProductPublic(ProductBase):
+    id: int
+    created: date
+    updated: date
