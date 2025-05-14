@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.database.models import CreditBase, CreditHistory, Account
+from app.database.models import CreditBase, CreditHistory, Account, CreditType
 from app.database.session import SessionDep
 from app.exceptions import NotFoundError
 
@@ -26,6 +26,7 @@ async def add_credit(credit: CreditBase, session: SessionDep) -> CreditHistory:
 @router.delete("/")
 async def delete_credit(credit: CreditBase, session: SessionDep) -> CreditHistory:
     credit_history_db = CreditHistory.model_validate(credit)
+    credit_history_db.type = CreditType.DELETE
 
     account = session.get(Account, credit.account_id)
     if not account:

@@ -1,11 +1,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Query
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 from app.database.models import Account, AccountBase, AccountWithCustomFieldsAndAddress
 from app.database.session import SessionDep
-from app.exceptions import NotFoundError
+from app.exceptions import NotFoundError, BadRequestError
 
 router = APIRouter(prefix="/accounts")
 
@@ -13,10 +14,14 @@ router = APIRouter(prefix="/accounts")
 @router.post("/")
 async def create_account(account: AccountBase, session: SessionDep) -> Account:
     account_db = Account.model_validate(account)
-    session.add(account_db)
-    session.commit()
-    session.refresh(account_db)
-    return account_db
+
+    try:
+        session.add(account_db)
+        session.commit()
+        session.refresh(account_db)
+        return account_db
+    except IntegrityError as exc:
+        raise BadRequestError(detail="Email already exists") from exc
 
 
 @router.get("/")

@@ -46,10 +46,15 @@ class CreditReason(str, Enum):
     OTHER = "OTHER"
 
 
+class CreditType(str, Enum):
+    ADD = "ADD"
+    DELETE = "DELETE"
+
+
 class CreditBase(SQLModel):
     amount: Decimal = Field(decimal_places=3)
     comment: str | None = Field(max_length=255, default=None)
-    reason: CreditReason = Field(default=CreditReason.COURTESY)
+    reason: CreditReason = Field(default=CreditReason.OTHER)
     account_id: int
 
 
@@ -60,6 +65,7 @@ class CreditHistory(CreditBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     account: Account = Relationship(back_populates="credit_history")
+    type: CreditType = Field(default=CreditType.ADD)
     created: date = Field(default=datetime.now(timezone.utc), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
