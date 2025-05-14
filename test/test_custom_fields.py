@@ -9,18 +9,18 @@ def test_custom_field():
 
     with client:
 
+        data = {"name": "test", "value": "test"}
+
         # Create
-        response = client.post(
-            "/v1/customFields", json={"name": "test", "value": "test"}
-        )
+        response = client.post("/v1/customFields", json=data)
 
         json = response.json()
 
         custom_field_id = json["id"]
 
         assert response.status_code == 200
-        assert json["name"] == "test"
-        assert json["value"] == "test"
+        assert json["name"] == data["name"]
+        assert json["value"] == data["value"]
         assert json["account_id"] is None
 
         # List
@@ -35,25 +35,25 @@ def test_custom_field():
         json = response.json()
 
         assert response.status_code == 200
-        assert json["name"] == "test"
-        assert json["value"] == "test"
+        assert json["name"] == data["name"]
+        assert json["value"] == data["value"]
         assert json["account_id"] is None
         assert json["account"] is None
 
         # Update
-        response = client.put(
-            f"/v1/customFields/{custom_field_id}",
-            json={
-                "name": "test 2",
-                "value": "test 2",
-            },
-        )
+
+        data = {
+            "name": "test 2",
+            "value": "test 2",
+        }
+
+        response = client.put(f"/v1/customFields/{custom_field_id}", json=data)
 
         json = response.json()
 
         assert response.status_code == 200
-        assert json["name"] == "test 2"
-        assert json["value"] == "test 2"
+        assert json["name"] == data["name"]
+        assert json["value"] == data["value"]
 
         # Delete
         response = client.delete(f"/v1/customFields/{custom_field_id}")
