@@ -22,7 +22,12 @@ async def create_account(account: AccountBase, session: SessionDep) -> Account:
         session.refresh(account_db)
         return account_db
     except IntegrityError as exc:
-        raise BadRequestError(detail="Email already exists") from exc
+        message = (
+            "External id already exists"
+            if "UNIQUE constraint failed: account.external_id" in str(exc)
+            else "Email already exists"
+        )
+        raise BadRequestError(detail=message) from exc
 
 
 @router.get("/")
