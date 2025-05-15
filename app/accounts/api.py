@@ -6,9 +6,10 @@ from sqlmodel import select
 
 from app.database.models import Account, AccountBase, AccountWithCustomFieldsAndAddress
 from app.database.session import SessionDep
-from app.exceptions import NotFoundError, BadRequestError
+from app.exceptions import BadRequestError, NotFoundError
+from app.responses import responses
 
-router = APIRouter(prefix="/accounts")
+router = APIRouter(prefix="/accounts", responses=responses)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

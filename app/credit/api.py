@@ -1,10 +1,11 @@
 from fastapi import APIRouter, status
 
-from app.database.models import CreditBase, CreditHistory, Account, CreditType
+from app.database.models import Account, CreditBase, CreditHistory, CreditType
 from app.database.session import SessionDep
 from app.exceptions import NotFoundError
+from app.responses import responses
 
-router = APIRouter(prefix="/credits")
+router = APIRouter(prefix="/credits", responses=responses)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

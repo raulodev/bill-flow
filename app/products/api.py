@@ -7,8 +7,9 @@ from sqlmodel import select
 from app.database.models import Product, ProductBase, ProductPublic
 from app.database.session import SessionDep
 from app.exceptions import NotFoundError
+from app.responses import responses
 
-router = APIRouter(prefix="/products")
+router = APIRouter(prefix="/products", responses=responses)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
