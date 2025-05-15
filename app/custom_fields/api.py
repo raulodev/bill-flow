@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, status
 from sqlmodel import select
 
 from app.database.models import CustomField, CustomFieldBase, CustomFieldWithAccount
@@ -10,7 +10,7 @@ from app.exceptions import NotFoundError
 router = APIRouter(prefix="/customFields")
 
 
-@router.post("/")
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_custom_field(
     custom_field: CustomFieldBase, session: SessionDep
 ) -> CustomField:

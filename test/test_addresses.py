@@ -19,7 +19,7 @@ def test_addresses(client: TestClient):
 
     json = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     address_id = json["id"]
 

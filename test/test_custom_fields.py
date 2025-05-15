@@ -10,7 +10,7 @@ def test_custom_field(client: TestClient):
 
     json = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     custom_field_id = json["id"]
 

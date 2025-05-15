@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, status
 
 from app.database.models import CreditBase, CreditHistory, Account, CreditType
 from app.database.session import SessionDep
@@ -7,7 +7,7 @@ from app.exceptions import NotFoundError
 router = APIRouter(prefix="/credits")
 
 
-@router.post("/")
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def add_credit(credit: CreditBase, session: SessionDep) -> CreditHistory:
     credit_history_db = CreditHistory.model_validate(credit)
 

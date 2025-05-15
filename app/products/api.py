@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, status
 from sqlalchemy.exc import NoResultFound
 from sqlmodel import select
 
@@ -11,7 +11,7 @@ from app.exceptions import NotFoundError
 router = APIRouter(prefix="/products")
 
 
-@router.post("/")
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_product(product: ProductBase, session: SessionDep) -> ProductPublic:
     product_db = Product.model_validate(product)
     session.add(product_db)

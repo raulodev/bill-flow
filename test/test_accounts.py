@@ -17,7 +17,7 @@ def test_accounts(client: TestClient):
 
     json = response.json()
 
-    assert response.status_code == 200
+    assert response.status_code == 201
 
     account_id = json["id"]
 

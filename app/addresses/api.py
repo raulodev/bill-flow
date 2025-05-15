@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, status
 from sqlmodel import select
 
 from app.database.models import Address, AddressBase, AddressWithAccount
@@ -10,7 +10,7 @@ from app.exceptions import NotFoundError
 router = APIRouter(prefix="/addresses")
 
 
-@router.post("/")
+@router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_address(address: AddressBase, session: SessionDep) -> Address:
     address_db = Address.model_validate(address)
     session.add(address_db)
