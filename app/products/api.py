@@ -41,7 +41,7 @@ def read_product(product_id: int, session: SessionDep) -> ProductPublic:
     return product
 
 
-@router.delete("/{product_id}")
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(product_id: int, session: SessionDep):
 
     try:
@@ -51,7 +51,7 @@ def delete_product(product_id: int, session: SessionDep):
 
         product.is_deleted = True
         session.commit()
-        return {"ok": True}
+        return ""
     except NoResultFound as exc:
         raise NotFoundError() from exc
 

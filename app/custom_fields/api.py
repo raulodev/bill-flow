@@ -42,14 +42,14 @@ def read_custom_field(
     return custom_field
 
 
-@router.delete("/{custom_field_id}")
+@router.delete("/{custom_field_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_custom_field(custom_field_id: int, session: SessionDep):
     custom_field = session.get(CustomField, custom_field_id)
     if not custom_field:
         raise NotFoundError()
     session.delete(custom_field)
     session.commit()
-    return {"ok": True}
+    return ""
 
 
 @router.put("/{custom_field_id}")

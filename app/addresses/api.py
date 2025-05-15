@@ -38,14 +38,14 @@ def read_address(address_id: int, session: SessionDep) -> AddressWithAccount:
     return address
 
 
-@router.delete("/{address_id}")
+@router.delete("/{address_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_address(address_id: int, session: SessionDep):
     address = session.get(Address, address_id)
     if not address:
         raise NotFoundError()
     session.delete(address)
     session.commit()
-    return {"ok": True}
+    return ""
 
 
 @router.put("/{address_id}")

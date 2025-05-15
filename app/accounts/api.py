@@ -45,14 +45,14 @@ def read_account(
     return account
 
 
-@router.delete("/{account_id}")
+@router.delete("/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_account(account_id: int, session: SessionDep):
     account = session.get(Account, account_id)
     if not account:
         raise NotFoundError()
     session.delete(account)
     session.commit()
-    return {"ok": True}
+    return ""
 
 
 @router.put("/{account_id}")
