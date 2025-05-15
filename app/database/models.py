@@ -13,7 +13,7 @@ class AccountBase(SQLModel):
     email: EmailStr | None = Field(default=None, index=True, unique=True)
     phone: str | None = Field(max_length=25, default=None, index=True)
     timezone: str | None = Field(max_length=50, default=None)
-    external_id: int | None = None
+    external_id: int | None = Field(default=None, unique=True)
 
 
 class Account(AccountBase, table=True):
@@ -127,8 +127,9 @@ class CustomFieldWithAccount(CustomFieldBase):
 
 class ProductBase(SQLModel):
     name: str = Field(index=True)
+    price: Decimal = Field(decimal_places=3, ge=0)
     picture: str | None = None
-    external_id: int | None = None
+    external_id: int | None = Field(default=None, unique=True)
 
 
 class Product(ProductBase, table=True):
