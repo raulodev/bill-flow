@@ -104,6 +104,7 @@ class CustomFieldBase(SQLModel):
     name: str = Field(max_length=64, index=True)
     value: str = Field(max_length=255)
     account_id: int | None = None
+    product_id: int | None = None
 
 
 class CustomField(CustomFieldBase, table=True):
@@ -115,14 +116,19 @@ class CustomField(CustomFieldBase, table=True):
         default=None, foreign_key="account.id", ondelete="CASCADE"
     )
     account: Account | None = Relationship(back_populates="custom_fields")
+    product_id: int | None = Field(
+        default=None, foreign_key="product.id", ondelete="CASCADE"
+    )
+    product: Optional["Product"] = Relationship(back_populates="custom_fields")
     created: date = Field(default=datetime.now(timezone.utc), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
 
 
-class CustomFieldWithAccount(CustomFieldBase):
+class CustomFieldWithAccountAndProduct(CustomFieldBase):
     account: Optional["Account"] = None
+    product: Optional["Product"] = None
 
 
 class ProductBase(SQLModel):
@@ -135,6 +141,9 @@ class ProductBase(SQLModel):
 class Product(ProductBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     is_deleted: bool = Field(default=False)
+    custom_fields: List["CustomField"] = Relationship(
+        back_populates="product", cascade_delete=True
+    )
     created: date = Field(default=datetime.now(timezone.utc), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
@@ -145,3 +154,4 @@ class ProductPublic(ProductBase):
     id: int
     created: date
     updated: date
+    custom_fields: List[CustomField] = []
