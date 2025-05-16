@@ -13,7 +13,7 @@ class AccountBase(SQLModel):
     email: EmailStr | None = Field(default=None, index=True, unique=True)
     phone: str | None = Field(max_length=25, default=None, index=True)
     timezone: str | None = Field(max_length=50, default=None)
-    external_id: int | None = Field(default=None, unique=True)
+    external_id: int | None = Field(default=None, unique=True, index=True)
 
 
 class Account(AccountBase, table=True):
