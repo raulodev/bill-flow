@@ -93,7 +93,7 @@ def test_delete_address(client: TestClient, db):
     assert response.status_code == 204
 
 
-def test_delete_address_error(client: TestClient, db):
+def test_delete_address_error(client: TestClient):
 
     response = client.delete("/v1/addresses/999")
 
