@@ -1,17 +1,31 @@
-from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from pytz import utc
+from celery import Celery
+from celery.schedules import crontab
 
-from app.settings import DATABASE_URL
+from app.settings import CELERY_BROKER_URL
 
-jobstores = {"default": SQLAlchemyJobStore(url=DATABASE_URL)}
+app = Celery("tasks", broker=CELERY_BROKER_URL)
 
-scheduler = AsyncIOScheduler(jobstores=jobstores, timezone=utc)
+app.conf.timezone = "UTC"
 
 
-@scheduler.scheduled_job("interval", seconds=5, coalesce=True)
-def do_something():
-    pass
-    # Recoger lista de subscripciones por bcd
-    # Generar facturas
-    # Hacer intentos de pago
+@app.on_after_configure.connect
+def setup_periodic_tasks(sender: Celery, **kwargs):
+
+    # test
+    sender.add_periodic_task(10.0, generate_invoices.s(), name="test")
+
+    sender.add_periodic_task(
+        crontab(hour=0, minute=0), generate_invoices.s(), name="generate invoices"
+    )
+
+
+@app.task
+def generate_invoices():
+    # TODO generate invoices
+    print("Task executed")
+
+
+@app.task
+def generate_payments():
+    # TODO generate payments
+    print("Task executed")
