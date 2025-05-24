@@ -5,3 +5,4 @@ pytest==8.3.5
 pytz==2025.2
 python-dateutil==2.9.0.post0
 APScheduler==3.11.0
+pytest-cov==6.1.1

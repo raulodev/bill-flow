@@ -61,13 +61,24 @@ def delete_account(account_id: int, session: SessionDep):
 
 
 @router.put("/{account_id}")
-def update_address(account_id: int, account: AccountBase, session: SessionDep):
+def update_address(
+    account_id: int, account: AccountBase, session: SessionDep
+) -> Account:
     account_db = session.get(Account, account_id)
     if not account_db:
         raise NotFoundError()
     account_data = account.model_dump(exclude_unset=True)
     account_db.sqlmodel_update(account_data)
-    session.add(account_db)
-    session.commit()
-    session.refresh(account_db)
-    return account_db
+
+    try:
+        session.add(account_db)
+        session.commit()
+        session.refresh(account_db)
+        return account_db
+    except IntegrityError as exc:
+        message = (
+            "External id already exists"
+            if "UNIQUE constraint failed: account.external_id" in str(exc)
+            else "Email already exists"
+        )
+        raise BadRequestError(detail=message) from exc
