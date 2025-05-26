@@ -17,12 +17,12 @@ def test_create_address(client: TestClient):
 
     response = client.post("/v1/addresses", json=data)
 
-    json = response.json()
-
     assert response.status_code == 201
 
+    response_json = response.json()
+
     for key, value in data.items():
-        assert json[key] == value
+        assert response_json[key] == value
 
 
 def test_read_addresses(client: TestClient, db):
