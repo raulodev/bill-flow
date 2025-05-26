@@ -49,7 +49,9 @@ def delete_address(address_id: int, session: SessionDep):
 
 
 @router.put("/{address_id}")
-def update_address(address_id: int, address: AddressBase, session: SessionDep):
+def update_address(
+    address_id: int, address: AddressBase, session: SessionDep
+) -> Address:
     address_db = session.get(Address, address_id)
     if not address_db:
         raise NotFoundError()
