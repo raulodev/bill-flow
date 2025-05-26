@@ -1,8 +1,8 @@
 dev:
 	fastapi dev app/main.py
 
-texts:
-	pytest tests/test_custom_fields.py -s
+pytest:
+	pytest tests/ -s
 
 test-cov:
 	pytest --cov=app tests/
