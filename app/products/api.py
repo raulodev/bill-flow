@@ -1,19 +1,19 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, status
-from sqlalchemy.exc import NoResultFound, IntegrityError
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
-from app.database.models import Product, ProductBase, ProductPublic
+from app.database.models import Product, ProductBase, ProductWithCustomFields
 from app.database.session import SessionDep
-from app.exceptions import NotFoundError, BadRequestError
+from app.exceptions import BadRequestError, NotFoundError
 from app.responses import responses
 
 router = APIRouter(prefix="/products", responses=responses)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_product(product: ProductBase, session: SessionDep) -> ProductPublic:
+async def create_product(product: ProductBase, session: SessionDep) -> Product:
     product_db = Product.model_validate(product)
 
     try:
@@ -30,15 +30,27 @@ def read_products(
     session: SessionDep,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
-) -> list[ProductPublic]:
-    products = session.exec(
-        select(Product).filter_by(is_deleted=False).offset(offset).limit(limit)
-    ).all()
+    status: Literal[  # pylint: disable=redefined-outer-name
+        "ALL", "AVAILABLE", "NO_AVAILABLE"
+    ] = "ALL",
+) -> list[Product]:
+
+    query = select(Product).offset(offset).limit(limit)
+
+    if status == "AVAILABLE":
+        query = select(Product).filter_by(is_available=True).offset(offset).limit(limit)
+
+    elif status == "NO_AVAILABLE":
+        query = (
+            select(Product).filter_by(is_available=False).offset(offset).limit(limit)
+        )
+
+    products = session.exec(query).all()
     return products
 
 
 @router.get("/{product_id}")
-def read_product(product_id: int, session: SessionDep) -> ProductPublic:
+def read_product(product_id: int, session: SessionDep) -> ProductWithCustomFields:
     product = session.get(Product, product_id)
     if not product:
         raise NotFoundError()
@@ -48,20 +60,19 @@ def read_product(product_id: int, session: SessionDep) -> ProductPublic:
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(product_id: int, session: SessionDep):
 
-    try:
-        product = session.exec(
-            select(Product).filter_by(id=product_id, is_deleted=False)
-        ).one()
+    product = session.get(Product, product_id)
+    if not product:
+        raise NotFoundError()
 
-        product.is_deleted = True
-        session.commit()
-        return ""
-    except NoResultFound as exc:
-        raise NotFoundError() from exc
+    product.is_available = False
+    session.commit()
+    return ""
 
 
 @router.put("/{product_id}")
-def update_product(product_id: int, custom_field: ProductBase, session: SessionDep):
+def update_product(
+    product_id: int, custom_field: ProductBase, session: SessionDep
+) -> Product:
     product_db = session.get(Product, product_id)
     if not product_db:
         raise NotFoundError()

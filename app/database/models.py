@@ -136,11 +136,11 @@ class ProductBase(SQLModel):
     price: Decimal = Field(decimal_places=3, ge=0)
     picture: str | None = None
     external_id: int | None = Field(default=None, unique=True)
+    is_available: bool = Field(default=True)
 
 
 class Product(ProductBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    is_deleted: bool = Field(default=False)
     custom_fields: List["CustomField"] = Relationship(
         back_populates="product", cascade_delete=True
     )
@@ -150,7 +150,7 @@ class Product(ProductBase, table=True):
     )
 
 
-class ProductPublic(ProductBase):
+class ProductWithCustomFields(ProductBase):
     id: int
     created: date
     updated: date
