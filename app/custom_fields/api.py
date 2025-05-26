@@ -59,7 +59,7 @@ def delete_custom_field(custom_field_id: int, session: SessionDep):
 @router.put("/{custom_field_id}")
 def update_custom_field(
     custom_field_id: int, custom_field: CustomFieldBase, session: SessionDep
-):
+) -> CustomField:
     custom_field_db = session.get(CustomField, custom_field_id)
     if not custom_field_db:
         raise NotFoundError()
