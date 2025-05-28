@@ -21,6 +21,9 @@ class Account(AccountBase, table=True):
     custom_fields: List["CustomField"] = Relationship(
         back_populates="account", cascade_delete=True
     )
+    subscriptions: List["Subscription"] = Relationship(
+        back_populates="account", cascade_delete=True
+    )
     address: Optional["Address"] = Relationship(
         back_populates="account", cascade_delete=True
     )
@@ -200,27 +203,26 @@ class ProductSubscriptionLink(SQLModel, table=True):
         primary_key=True, foreign_key="product.id", ondelete="CASCADE"
     )
     product: Product = Relationship()
+    quantity: int = Field(default=1, description="Numbers of products")
     subscription_id: int = Field(
         primary_key=True, foreign_key="subscription.id", ondelete="CASCADE"
     )
     subscription: "Subscription" = Relationship()
 
 
-class SubscriptionBase(SQLModel):
-    account_id: int
-    billing_period: BillingPeriod
-    trial_time_unit: TrialTimeUnit | None = None
-    trial_time: int | None = None
-    start_date: date | None = None
-    end_date: date | None = None
-
-
-class Subscription(SubscriptionBase, table=True):
+class Subscription(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    account: Account | None = Relationship(back_populates="subscriptions")
     products: List[Product] = Relationship(link_model=ProductSubscriptionLink)
     custom_fields: List["CustomField"] = Relationship(
         back_populates="subscription", cascade_delete=True
     )
+    billing_period: BillingPeriod
+    trial_time_unit: TrialTimeUnit | None = Field(default=None)
+    trial_time: int | None = Field(default=None)
+    start_date: date | None = Field(default=datetime.now(timezone.utc))
+    end_date: date | None = Field(default=None)
     state: State = Field(default=State.ACTIVE)
     billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
     created: date = Field(default=datetime.now(timezone.utc), nullable=False)
