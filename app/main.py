@@ -14,6 +14,7 @@ from app.credit.api import router as credit_router
 from app.custom_fields.api import router as custom_fields_router
 from app.database.session import create_db_and_tables
 from app.products.api import router as product_router
+from app.subscriptions.api import router as subscription_router
 
 
 @asynccontextmanager
@@ -64,3 +65,4 @@ app.include_router(credit_router, prefix="/v1", tags=["Credits"])
 app.include_router(product_router, prefix="/v1", tags=["Products"])
 app.include_router(address_router, prefix="/v1", tags=["Addresses"])
 app.include_router(custom_fields_router, prefix="/v1", tags=["Custom Fields"])
+app.include_router(subscription_router, prefix="/v1", tags=["Subscriptions"])
