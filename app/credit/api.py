@@ -8,7 +8,7 @@ from app.responses import responses
 router = APIRouter(prefix="/credits", responses=responses)
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/add", status_code=status.HTTP_201_CREATED)
 async def add_credit(credit: CreditBase, session: SessionDep) -> CreditHistory:
     credit_history_db = CreditHistory.model_validate(credit)
 
@@ -24,7 +24,7 @@ async def add_credit(credit: CreditBase, session: SessionDep) -> CreditHistory:
     return credit_history_db
 
 
-@router.delete("/")
+@router.post("/delete")
 async def delete_credit(credit: CreditBase, session: SessionDep) -> CreditHistory:
     credit_history_db = CreditHistory.model_validate(credit)
     credit_history_db.type = CreditType.DELETE
