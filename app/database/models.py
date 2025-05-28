@@ -120,6 +120,14 @@ class CustomField(CustomFieldBase, table=True):
         default=None, foreign_key="product.id", ondelete="CASCADE"
     )
     product: Optional["Product"] = Relationship(back_populates="custom_fields")
+
+    subscription_id: int | None = Field(
+        default=None, foreign_key="subscription.id", ondelete="CASCADE"
+    )
+    subscription: Optional["Subscription"] = Relationship(
+        back_populates="custom_fields"
+    )
+
     created: date = Field(default=datetime.now(timezone.utc), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
@@ -155,3 +163,67 @@ class ProductWithCustomFields(ProductBase):
     created: date
     updated: date
     custom_fields: List[CustomField] = []
+
+
+class BillingPeriod(str, Enum):
+    DAILY = "DAILY"
+    WEEKLY = "WEEKLY"
+    BIWEEKLY = "BIWEEKLY"
+    THIRTY_DAYS = "THIRTY_DAYS"
+    THIRTY_ONE_DAYS = "THIRTY_ONE_DAYS"
+    MONTHLY = "MONTHLY"
+    QUARTERLY = "QUARTERLY"
+    BIANNUAL = "BIANNUAL"
+    ANNUAL = "ANNUAL"
+    SESQUIENNIAL = "SESQUIENNIAL"
+    BIENNIAL = "BIENNIAL"
+    TRIENNIAL = "TRIENNIAL"
+
+
+class TrialTimeUnit(str, Enum):
+    UNLIMITED = "UNLIMITED"
+    DAYS = "DAYS"
+    WEEKS = "WEEKS"
+    MONTHS = "MONTHS"
+    YEARS = "YEARS"
+
+
+class State(str, Enum):
+    ACTIVE = "ACTIVE"
+    CANCELLED = "CANCELLED"
+    PAUSED = "PAUSED"
+
+
+class ProductSubscriptionLink(SQLModel, table=True):
+
+    product_id: int = Field(
+        primary_key=True, foreign_key="product.id", ondelete="CASCADE"
+    )
+    product: Product = Relationship()
+    subscription_id: int = Field(
+        primary_key=True, foreign_key="subscription.id", ondelete="CASCADE"
+    )
+    subscription: "Subscription" = Relationship()
+
+
+class SubscriptionBase(SQLModel):
+    account_id: int
+    billing_period: BillingPeriod
+    trial_time_unit: TrialTimeUnit | None = None
+    trial_time: int | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+
+
+class Subscription(SubscriptionBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    products: List[Product] = Relationship(link_model=ProductSubscriptionLink)
+    custom_fields: List["CustomField"] = Relationship(
+        back_populates="subscription", cascade_delete=True
+    )
+    state: State = Field(default=State.ACTIVE)
+    billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
+    created: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    updated: date = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
