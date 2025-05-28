@@ -221,11 +221,29 @@ class Subscription(SQLModel, table=True):
     billing_period: BillingPeriod
     trial_time_unit: TrialTimeUnit | None = Field(default=None)
     trial_time: int | None = Field(default=None)
-    start_date: date | None = Field(default=datetime.now(timezone.utc))
+    start_date: date = Field(default=datetime.now(timezone.utc))
     end_date: date | None = Field(default=None)
     state: State = Field(default=State.ACTIVE)
     billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
+    external_id: int | None = Field(default=None, unique=True, index=True)
+
     created: date = Field(default=datetime.now(timezone.utc), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+
+class ProductAndQuantity(SQLModel):
+    product_id: int
+    quantity: int = 1
+
+
+class SubscriptionCreate(SQLModel):
+    account_id: int
+    products: List[ProductAndQuantity]
+    billing_period: BillingPeriod
+    trial_time_unit: TrialTimeUnit | None = None
+    trial_time: int | None = None
+    start_date: date = Field(default=datetime.now(timezone.utc))
+    end_date: date | None = None
+    external_id: int | None = None
