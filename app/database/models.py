@@ -31,7 +31,7 @@ class Account(AccountBase, table=True):
     credit_history: List["CreditHistory"] = Relationship(
         back_populates="account", cascade_delete=True
     )
-    created: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
@@ -69,7 +69,7 @@ class CreditHistory(CreditBase, table=True):
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     account: Account = Relationship(back_populates="credit_history")
     type: CreditType = Field(default=CreditType.ADD)
-    created: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
@@ -93,7 +93,7 @@ class Address(AddressBase, table=True):
         default=None, foreign_key="account.id", ondelete="CASCADE"
     )
     account: Account | None = Relationship(back_populates="address")
-    created: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
@@ -131,7 +131,7 @@ class CustomField(CustomFieldBase, table=True):
         back_populates="custom_fields"
     )
 
-    created: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
@@ -155,10 +155,11 @@ class Product(ProductBase, table=True):
     custom_fields: List["CustomField"] = Relationship(
         back_populates="product", cascade_delete=True
     )
-    created: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
+    subscriptions: list["SubscriptionProduct"] = Relationship(back_populates="product")
 
 
 class ProductWithCustomFields(ProductBase):
@@ -197,53 +198,56 @@ class State(str, Enum):
     PAUSED = "PAUSED"
 
 
-class ProductSubscriptionLink(SQLModel, table=True):
+class SubscriptionProductBase(SQLModel):
+    quantity: int = Field(default=1, ge=1, description="Numbers of products")
+    product_id: int
+
+
+class SubscriptionProduct(SubscriptionProductBase, table=True):
+
+    __tablename__ = "subscription_product"
 
     product_id: int = Field(
         primary_key=True, foreign_key="product.id", ondelete="CASCADE"
     )
-    product: Product = Relationship()
-    quantity: int = Field(default=1, description="Numbers of products")
     subscription_id: int = Field(
         primary_key=True, foreign_key="subscription.id", ondelete="CASCADE"
     )
-    subscription: "Subscription" = Relationship()
 
-
-class Subscription(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
-    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
-    account: Account | None = Relationship(back_populates="subscriptions")
-    products: List[Product] = Relationship(link_model=ProductSubscriptionLink)
-    custom_fields: List["CustomField"] = Relationship(
-        back_populates="subscription", cascade_delete=True
-    )
-    billing_period: BillingPeriod
-    trial_time_unit: TrialTimeUnit | None = Field(default=None)
-    trial_time: int | None = Field(default=None)
-    start_date: date = Field(default=datetime.now(timezone.utc))
-    end_date: date | None = Field(default=None)
-    state: State = Field(default=State.ACTIVE)
-    billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
-    external_id: int | None = Field(default=None, unique=True, index=True)
-
-    created: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    subscription: "Subscription" = Relationship(back_populates="products")
+    product: "Product" = Relationship(back_populates="subscriptions")
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
 
 
-class ProductAndQuantity(SQLModel):
-    product_id: int
-    quantity: int = 1
-
-
-class SubscriptionCreate(SQLModel):
+class SubscriptionBase(SQLModel):
     account_id: int
-    products: List[ProductAndQuantity]
     billing_period: BillingPeriod
-    trial_time_unit: TrialTimeUnit | None = None
-    trial_time: int | None = None
-    start_date: date = Field(default=datetime.now(timezone.utc))
-    end_date: date | None = None
-    external_id: int | None = None
+    trial_time_unit: TrialTimeUnit | None = Field(default=None)
+    trial_time: int | None = Field(default=None)
+    start_date: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
+    end_date: date | None = Field(default=None)
+    external_id: int | None = Field(default=None, unique=True, index=True)
+
+
+class Subscription(SubscriptionBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    account: Account | None = Relationship(back_populates="subscriptions")
+    products: list["SubscriptionProduct"] = Relationship(back_populates="subscription")
+    custom_fields: List["CustomField"] = Relationship(
+        back_populates="subscription", cascade_delete=True
+    )
+    start_date: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    state: State = Field(default=State.ACTIVE)
+    billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
+    updated: date = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class SubscriptionCreate(SubscriptionBase):
+    products: List[SubscriptionProductBase]
