@@ -1,7 +1,6 @@
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, status
-from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 from app.database.models import (
@@ -43,11 +42,6 @@ async def create_subscription(
 
     subscription_db.products = product_entries
 
-    try:
-        session.commit()
-        session.refresh(subscription_db)
-        return subscription_db
-    except IntegrityError as exc:
-        raise BadRequestError(
-            detail="A product cannot be repeated in the same subscription"
-        ) from exc
+    session.commit()
+    session.refresh(subscription_db)
+    return subscription_db
