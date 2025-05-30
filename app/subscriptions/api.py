@@ -9,7 +9,7 @@ from app.database.models import (
     SubscriptionCreate,
     SubscriptionProduct,
     SubscriptionResponse,
-    SubscriptionWithAccount,
+    SubscriptionWithAccountAndCustomFields,
 )
 from app.database.session import SessionDep
 from app.exceptions import BadRequestError, NotFoundError
@@ -76,7 +76,7 @@ def read_subscriptions(
 @router.get("/{subscription_id}")
 def read_subscription(
     subscription_id: int, session: SessionDep
-) -> SubscriptionWithAccount:
+) -> SubscriptionWithAccountAndCustomFields:
     subscription = session.get(Subscription, subscription_id)
     if not subscription:
         raise NotFoundError()

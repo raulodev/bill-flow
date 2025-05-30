@@ -108,6 +108,7 @@ class CustomFieldBase(SQLModel):
     value: str = Field(max_length=255)
     account_id: int | None = None
     product_id: int | None = None
+    subscription_id: int | None = None
 
 
 class CustomField(CustomFieldBase, table=True):
@@ -262,5 +263,6 @@ class SubscriptionResponse(SubscriptionBase):
     products: List[SubscriptionProductBase]
 
 
-class SubscriptionWithAccount(SubscriptionResponse):
+class SubscriptionWithAccountAndCustomFields(SubscriptionResponse):
     account: Account
+    custom_fields: List["CustomField"]
