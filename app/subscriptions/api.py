@@ -48,7 +48,7 @@ async def create_subscription(
 
 
 @router.get("/")
-def read_accounts(
+def read_subscriptions(
     session: SessionDep,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
