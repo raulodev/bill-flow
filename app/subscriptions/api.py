@@ -32,7 +32,7 @@ async def create_subscription(
 
     session.add(subscription_db)
 
-    product_entries = [
+    products = [
         SubscriptionProduct(
             product_id=product.product_id,
             quantity=product.quantity,
@@ -40,7 +40,7 @@ async def create_subscription(
         for product in subscription.products
     ]
 
-    subscription_db.products = product_entries
+    subscription_db.products = products
 
     session.commit()
     session.refresh(subscription_db)
