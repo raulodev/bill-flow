@@ -4,10 +4,12 @@ from fastapi import APIRouter, Query, status
 from sqlmodel import select
 
 from app.database.models import (
+    Account,
     Subscription,
     SubscriptionCreate,
     SubscriptionProduct,
     SubscriptionResponse,
+    SubscriptionWithAccount,
 )
 from app.database.session import SessionDep
 from app.exceptions import BadRequestError, NotFoundError
@@ -26,6 +28,9 @@ async def create_subscription(
         raise BadRequestError(
             detail="A product cannot be repeated in the same subscription."
         )
+
+    if not session.get(Account, subscription.account_id):
+        raise NotFoundError(detail="Account not found")
 
     subscription_data = subscription.model_dump(exclude={"products"})
     subscription_db = Subscription(**subscription_data)
@@ -66,3 +71,13 @@ def read_subscriptions(
     subscriptions = session.exec(query).all()
 
     return subscriptions
+
+
+@router.get("/{subscription_id}")
+def read_subscription(
+    subscription_id: int, session: SessionDep
+) -> SubscriptionWithAccount:
+    subscription = session.get(Subscription, subscription_id)
+    if not subscription:
+        raise NotFoundError()
+    return subscription

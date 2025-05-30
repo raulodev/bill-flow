@@ -260,3 +260,7 @@ class SubscriptionResponse(SubscriptionBase):
     created: date
     updated: date
     products: List[SubscriptionProductBase]
+
+
+class SubscriptionWithAccount(SubscriptionResponse):
+    account: Account
