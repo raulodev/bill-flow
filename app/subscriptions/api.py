@@ -45,3 +45,24 @@ async def create_subscription(
     session.commit()
     session.refresh(subscription_db)
     return subscription_db
+
+
+@router.get("/")
+def read_accounts(
+    session: SessionDep,
+    offset: int = 0,
+    limit: Annotated[int, Query(le=100)] = 100,
+    state: Literal[  # pylint: disable=redefined-outer-name
+        "ACTIVE", "CANCELLED", "PAUSED", "ALL"
+    ] = "ALL",
+) -> list[SubscriptionResponse]:
+
+    query = select(Subscription).offset(offset).limit(limit)
+
+    if state != "ALL":
+
+        query = select(Subscription).filter_by(state=state).offset(offset).limit(limit)
+
+    subscriptions = session.exec(query).all()
+
+    return subscriptions
