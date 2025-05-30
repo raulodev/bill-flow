@@ -251,3 +251,12 @@ class Subscription(SubscriptionBase, table=True):
 
 class SubscriptionCreate(SubscriptionBase):
     products: List[SubscriptionProductBase]
+
+
+class SubscriptionResponse(SubscriptionBase):
+    id: int
+    state: State
+    billing_day: int
+    created: date
+    updated: date
+    products: List[SubscriptionProductBase]

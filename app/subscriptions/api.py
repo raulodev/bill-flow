@@ -8,6 +8,7 @@ from app.database.models import (
     Subscription,
     SubscriptionCreate,
     SubscriptionProduct,
+    SubscriptionResponse,
 )
 from app.database.session import SessionDep
 from app.exceptions import BadRequestError, NotFoundError
@@ -17,7 +18,9 @@ router = APIRouter(prefix="/subscriptions", responses=responses)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_subscription(subscription: SubscriptionCreate, session: SessionDep):
+async def create_subscription(
+    subscription: SubscriptionCreate, session: SessionDep
+) -> SubscriptionResponse:
 
     product_ids = [product.product_id for product in subscription.products]
     if len(product_ids) != len(set(product_ids)):
