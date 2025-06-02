@@ -113,6 +113,9 @@ def cancel_subscription(
     if not subscription:
         raise NotFoundError()
 
+    if subscription.state == State.CANCELLED:
+        raise BadRequestError(detail="The subscription is cancelled")
+
     today = datetime.now(timezone.utc).date()
 
     state = State.ACTIVE
@@ -133,6 +136,9 @@ def update_billing_day(
     if not subscription:
         raise NotFoundError()
 
+    if subscription.state == State.CANCELLED:
+        raise BadRequestError(detail="The subscription is cancelled")
+
     subscription.billing_day = day
 
     session.commit()
@@ -149,6 +155,9 @@ def pause_subscription(
     subscription = session.get(Subscription, subscription_id)
     if not subscription:
         raise NotFoundError()
+
+    if subscription.state == State.CANCELLED:
+        raise BadRequestError(detail="The subscription is cancelled")
 
     today = datetime.now(timezone.utc).date()
 
