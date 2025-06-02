@@ -91,6 +91,18 @@ def read_subscription(
     return subscription
 
 
+@router.get("/external/{external_id}")
+def read_subscription_by_external_id(
+    external_id: str, session: SessionDep
+) -> SubscriptionWithAccountAndCustomFields:
+    subscription = session.exec(
+        select(Subscription).filter_by(external_id=external_id)
+    ).one_or_none()
+    if not subscription:
+        raise NotFoundError()
+    return subscription
+
+
 @router.delete("/{subscription_id}", status_code=status.HTTP_204_NO_CONTENT)
 def cancel_subscription(
     subscription_id: int, session: SessionDep, end_date: date = None
