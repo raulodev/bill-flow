@@ -33,7 +33,7 @@ async def create_subscription(
         )
 
     if not session.get(Account, subscription.account_id):
-        raise NotFoundError(detail="Account not found")
+        raise BadRequestError(detail="Account not exists")
 
     subscription_data = subscription.model_dump(exclude={"products"})
     subscription_db = Subscription(**subscription_data)
