@@ -1,3 +1,4 @@
+from datetime import date, datetime, timezone
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, status
@@ -5,6 +6,7 @@ from sqlmodel import select
 
 from app.database.models import (
     Account,
+    State,
     Subscription,
     SubscriptionCreate,
     SubscriptionProduct,
@@ -81,3 +83,26 @@ def read_subscription(
     if not subscription:
         raise NotFoundError()
     return subscription
+
+
+@router.delete("/{subscription_id}", status_code=status.HTTP_204_NO_CONTENT)
+def cancel_subscription(
+    subscription_id: int, session: SessionDep, end_date: date = None
+):
+    subscription = session.get(Subscription, subscription_id)
+    if not subscription:
+        raise NotFoundError()
+
+    today = datetime.now(timezone.utc).date()
+
+    if end_date < today:
+        raise BadRequestError(detail="The end date cannot be earlier than today")
+
+    state = State.ACTIVE
+    if not end_date or end_date == today:
+        state = State.CANCELLED
+
+    subscription.state = state
+    subscription.end_date = end_date
+    session.commit()
+    return ""
