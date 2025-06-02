@@ -13,7 +13,7 @@ class AccountBase(SQLModel):
     email: EmailStr | None = Field(default=None, index=True, unique=True)
     phone: str | None = Field(max_length=25, default=None, index=True)
     timezone: str | None = Field(max_length=50, default=None)
-    external_id: int | None = Field(default=None, unique=True, index=True)
+    external_id: str | None = Field(default=None, unique=True, index=True)
 
 
 class Account(AccountBase, table=True):
@@ -147,7 +147,7 @@ class ProductBase(SQLModel):
     name: str = Field(index=True)
     price: Decimal = Field(decimal_places=3, ge=0)
     picture: str | None = None
-    external_id: int | None = Field(default=None, unique=True)
+    external_id: str | None = Field(default=None, unique=True)
     is_available: bool = Field(default=True)
 
 
@@ -230,7 +230,7 @@ class SubscriptionBase(SQLModel):
     trial_time: int | None = Field(default=None)
     start_date: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     end_date: date | None = Field(default=None)
-    external_id: int | None = Field(default=None, unique=True, index=True)
+    external_id: str | None = Field(default=None, unique=True, index=True)
 
 
 class Subscription(SubscriptionBase, table=True):
