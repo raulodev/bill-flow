@@ -105,16 +105,15 @@ def read_subscription_by_external_id(
 
 @router.delete("/{subscription_id}", status_code=status.HTTP_204_NO_CONTENT)
 def cancel_subscription(
-    subscription_id: int, session: SessionDep, end_date: date = None
+    subscription_id: int,
+    session: SessionDep,
+    end_date: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
 ):
     subscription = session.get(Subscription, subscription_id)
     if not subscription:
         raise NotFoundError()
 
     today = datetime.now(timezone.utc).date()
-
-    if end_date < today:
-        raise BadRequestError(detail="The end date cannot be earlier than today")
 
     state = State.ACTIVE
     if not end_date or end_date == today:
@@ -124,3 +123,42 @@ def cancel_subscription(
     subscription.end_date = end_date
     session.commit()
     return ""
+
+
+@router.put("/{subscription_id}/billing_day")
+def update_billing_day(
+    subscription_id: int, day: Annotated[int, Query(ge=0, le=31)], session: SessionDep
+) -> SubscriptionWithAccountAndCustomFields:
+    subscription = session.get(Subscription, subscription_id)
+    if not subscription:
+        raise NotFoundError()
+
+    subscription.billing_day = day
+
+    session.commit()
+    session.refresh(subscription)
+    return subscription
+
+
+@router.put("/{subscription_id}/pause")
+def pause_subscription(
+    subscription_id: int,
+    session: SessionDep,
+    resume: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
+) -> SubscriptionWithAccountAndCustomFields:
+    subscription = session.get(Subscription, subscription_id)
+    if not subscription:
+        raise NotFoundError()
+
+    today = datetime.now(timezone.utc).date()
+
+    state = State.ACTIVE
+    if not resume or resume > today:
+        state = State.PAUSED
+
+    subscription.state = state
+    subscription.resume_date = resume
+
+    session.commit()
+    session.refresh(subscription)
+    return subscription

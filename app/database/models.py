@@ -242,6 +242,7 @@ class Subscription(SubscriptionBase, table=True):
         back_populates="subscription", cascade_delete=True
     )
     start_date: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    resume_date: date | None = Field(default=None)
     state: State = Field(default=State.ACTIVE)
     billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
     created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
@@ -258,6 +259,7 @@ class SubscriptionResponse(SubscriptionBase):
     id: int
     state: State
     billing_day: int
+    resume_date: date | None = None
     created: date
     updated: date
     products: List[SubscriptionProductBase]
