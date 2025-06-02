@@ -19,7 +19,7 @@ def test_create_product_external_id_duplicate(client: TestClient):
     data = {
         "name": "Phone",
         "price": "500.000",
-        "external_id": 1,
+        "external_id": "1",
     }
 
     client.post("/v1/products", json=data)

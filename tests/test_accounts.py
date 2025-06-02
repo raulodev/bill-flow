@@ -10,7 +10,7 @@ def test_create_account_success(client: TestClient):
         "email": "test@email.com",
         "phone": "+11111111",
         "timezone": "Cuba",
-        "external_id": 1,
+        "external_id": "1",
     }
 
     response = client.post("/v1/accounts", json=data)
@@ -29,7 +29,7 @@ def test_create_account_external_id_duplicate(client: TestClient):
         "last_name": "Test Last Name",
         "phone": "+11111111",
         "timezone": "Cuba",
-        "external_id": 1,
+        "external_id": "1",
     }
 
     client.post("/v1/accounts", json=data)
@@ -103,7 +103,7 @@ def test_create_account_missing_email(client: TestClient):
         "last_name": "Test Last Name",
         "phone": "+11111111",
         "timezone": "Cuba",
-        "external_id": 3,
+        "external_id": "3",
     }
 
     response = client.post("/v1/accounts", json=data)
@@ -155,7 +155,7 @@ def test_retrieve_account(client: TestClient, db):
 
 def test_update_account(client: TestClient, db):
 
-    account1 = Account(first_name="1", external_id=1, email="test@example.com")
+    account1 = Account(first_name="1", external_id="1", email="test@example.com")
     db.add(account1)
     db.commit()
 
@@ -165,7 +165,7 @@ def test_update_account(client: TestClient, db):
         "email": "test@email.com",
         "phone": "+11111111",
         "timezone": "Cuba",
-        "external_id": 1,
+        "external_id": "1",
     }
 
     response = client.put("/v1/accounts/1", json=data)
@@ -191,7 +191,7 @@ def test_update_account_error(client: TestClient, db):
         "last_name": "Test Last Name",
         "phone": "+11111111",
         "timezone": "Cuba",
-        "external_id": 2,
+        "external_id": "2",
     }
 
     data_diplicate_email = {
