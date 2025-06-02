@@ -1,0 +1,277 @@
+from fastapi.testclient import TestClient
+from app.database.models import Account, Subscription, State, BillingPeriod
+
+
+def test_create_subscription(client: TestClient, db):
+
+    account = Account(first_name="Example", external_id=1, email="test@example.com")
+    db.add(account)
+    db.commit()
+
+    data = {
+        "account_id": 1,
+        "products": [
+            {"product_id": 1, "quantity": 1},
+            {"product_id": 2, "quantity": 1},
+        ],
+        "billing_period": "MONTHLY",
+    }
+
+    response = client.post("/v1/subscriptions", json=data)
+
+    assert response.status_code == 201
+
+
+def test_create_subscription_without_account(client: TestClient):
+
+    data = {
+        "account_id": 1,
+        "products": [
+            {"product_id": 1, "quantity": 1},
+            {"product_id": 2, "quantity": 1},
+        ],
+        "billing_period": "MONTHLY",
+        "external_id": "4",
+    }
+
+    response = client.post("/v1/subscriptions", json=data)
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Account not exists"
+
+
+def test_create_subscription_product_duplicate(client: TestClient, db):
+
+    account = Account(first_name="Example", external_id=1, email="test@example.com")
+    db.add(account)
+    db.commit()
+
+    data = {
+        "account_id": 1,
+        "products": [
+            {"product_id": 1, "quantity": 1},
+            {"product_id": 1, "quantity": 1},
+        ],
+        "billing_period": "MONTHLY",
+    }
+
+    response = client.post("/v1/subscriptions", json=data)
+
+    assert response.status_code == 400
+    assert (
+        response.json()["detail"]
+        == "A product cannot be repeated in the same subscription."
+    )
+
+
+def test_create_subscription_external_id_duplicate(client: TestClient, db):
+
+    account = Account(first_name="Example", external_id=1, email="test@example.com")
+    db.add(account)
+    db.commit()
+
+    data = {
+        "account_id": 1,
+        "products": [
+            {"product_id": 1, "quantity": 1},
+            {"product_id": 2, "quantity": 1},
+        ],
+        "billing_period": "MONTHLY",
+        "external_id": "4",
+    }
+
+    client.post("/v1/subscriptions", json=data)
+    response = client.post("/v1/subscriptions", json=data)
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "External id already exists"
+
+
+def test_create_subscription_empty_products(client: TestClient, db):
+
+    account = Account(first_name="Example", external_id=1, email="test@example.com")
+    db.add(account)
+    db.commit()
+
+    data = {
+        "account_id": 1,
+        "products": [],
+        "billing_period": "MONTHLY",
+        "external_id": "4",
+    }
+
+    response = client.post("/v1/subscriptions", json=data)
+
+    assert response.status_code == 201
+
+
+def test_read_subscriptions(client: TestClient, db):
+
+    subs1 = Subscription(
+        billing_period=BillingPeriod.BIANNUAL, account_id=1, state=State.ACTIVE
+    )
+    subs2 = Subscription(
+        billing_period=BillingPeriod.BIANNUAL, account_id=1, state=State.CANCELLED
+    )
+    subs3 = Subscription(
+        billing_period=BillingPeriod.BIANNUAL, account_id=1, state=State.PAUSED
+    )
+
+    db.add_all([subs1, subs2, subs3])
+    db.commit()
+
+    response = client.get("/v1/subscriptions?offset=0&limit=1")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+    response = client.get("/v1/subscriptions?state=ACTIVE")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+    response = client.get("/v1/subscriptions?state=PAUSED")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+    response = client.get("/v1/subscriptions?state=CANCELLED")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+    response = client.get("/v1/subscriptions?state=ALL")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 3
+
+
+def test_retrieve_subscription_error(client: TestClient):
+
+    response = client.get("/v1/subscriptions/1")
+
+    assert response.status_code == 404
+
+
+def test_retrieve_subscription(client: TestClient, db):
+
+    account = Account(first_name="Example", external_id=1, email="test@example.com")
+    db.add(account)
+    db.commit()
+
+    subs = Subscription(
+        billing_period=BillingPeriod.BIANNUAL, account_id=1, state=State.ACTIVE
+    )
+
+    db.add(subs)
+    db.commit()
+
+    response = client.get("/v1/subscriptions/1")
+
+    assert response.status_code == 200
+
+    response_json = response.json()
+
+    assert response_json["state"] == State.ACTIVE
+    assert response_json["billing_period"] == BillingPeriod.BIANNUAL
+
+
+def test_retrieve_subscription_by_external_id(client: TestClient, db):
+
+    account = Account(first_name="Example", external_id=1, email="test@example.com")
+    db.add(account)
+    db.commit()
+
+    subs = Subscription(
+        billing_period=BillingPeriod.BIANNUAL,
+        account_id=1,
+        state=State.ACTIVE,
+        external_id="external_id_abcd",
+    )
+
+    db.add(subs)
+    db.commit()
+
+    response = client.get("/v1/subscriptions/external/external_id_abcd")
+
+    assert response.status_code == 200
+
+    response_json = response.json()
+
+    assert response_json["state"] == State.ACTIVE
+    assert response_json["billing_period"] == BillingPeriod.BIANNUAL
+
+
+def test_cancel_subscription_error(client: TestClient, db):
+
+    response = client.delete("/v1/subscriptions/1")
+
+    assert response.status_code == 404
+
+    subs = Subscription(
+        billing_period=BillingPeriod.BIANNUAL,
+        account_id=1,
+        state=State.CANCELLED,
+        external_id="external_id_abcd",
+    )
+
+    db.add(subs)
+    db.commit()
+
+    response = client.delete("/v1/subscriptions/1")
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "The subscription is cancelled"
+
+
+def test_cancel_subscription(client: TestClient, db):
+
+    subs = Subscription(
+        billing_period=BillingPeriod.BIANNUAL, account_id=1, state=State.ACTIVE
+    )
+
+    db.add(subs)
+    db.commit()
+
+    response = client.delete("/v1/subscriptions/1")
+
+    assert response.status_code == 200
+    assert response.json()["state"] == State.CANCELLED
+
+
+def test_update_billing_day(client: TestClient, db):
+
+    account = Account(first_name="Example", external_id=1, email="test@example.com")
+    db.add(account)
+    db.commit()
+
+    subs = Subscription(
+        billing_period=BillingPeriod.BIANNUAL, account_id=1, state=State.ACTIVE
+    )
+
+    db.add(subs)
+    db.commit()
+
+    response = client.put("/v1/subscriptions/1/billing_day?day=5")
+
+    assert response.status_code == 200
+    assert response.json()["billing_day"] == 5
+
+
+def test_pause_subscriptions(client: TestClient, db):
+
+    account = Account(first_name="Example", external_id=1, email="test@example.com")
+    db.add(account)
+    db.commit()
+
+    subs = Subscription(
+        billing_period=BillingPeriod.BIANNUAL, account_id=1, state=State.ACTIVE
+    )
+
+    db.add(subs)
+    db.commit()
+
+    response = client.put("/v1/subscriptions/1/pause")
+
+    assert response.status_code == 200
+    assert response.json()["state"] == State.PAUSED
