@@ -103,12 +103,12 @@ def read_subscription_by_external_id(
     return subscription
 
 
-@router.delete("/{subscription_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{subscription_id}", status_code=status.HTTP_200_OK)
 def cancel_subscription(
     subscription_id: int,
     session: SessionDep,
     end_date: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
-):
+) -> SubscriptionResponse:
     subscription = session.get(Subscription, subscription_id)
     if not subscription:
         raise NotFoundError()
@@ -125,7 +125,8 @@ def cancel_subscription(
     subscription.state = state
     subscription.end_date = end_date
     session.commit()
-    return ""
+    session.refresh(subscription)
+    return subscription
 
 
 @router.put("/{subscription_id}/billing_day")
