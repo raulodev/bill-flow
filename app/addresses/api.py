@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, status
 from sqlmodel import select
 
 from app.database.models import Address, AddressBase, AddressWithAccount
-from app.database.session import SessionDep
+from app.database.deps import SessionDep
 from app.exceptions import NotFoundError
 from app.responses import responses
 

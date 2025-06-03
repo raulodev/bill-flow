@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status
 
 from app.database.models import Account, CreditBase, CreditHistory, CreditType
-from app.database.session import SessionDep
+from app.database.deps import SessionDep
 from app.exceptions import NotFoundError
 from app.responses import responses
 

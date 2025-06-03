@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 from app.database.models import Product, ProductBase, ProductWithCustomFields
-from app.database.session import SessionDep
+from app.database.deps import SessionDep
 from app.exceptions import BadRequestError, NotFoundError
 from app.responses import responses
 

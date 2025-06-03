@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import Session
 
-from app.database.session import clear_db_and_tables, create_db_and_tables, engine
+from app.database.deps import clear_db_and_tables, create_db_and_tables, engine
 from app.main import app
 
 

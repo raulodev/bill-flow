@@ -8,7 +8,7 @@ from app.database.models import (
     CustomFieldBase,
     CustomFieldWithAccountAndProduct,
 )
-from app.database.session import SessionDep
+from app.database.deps import SessionDep
 from app.exceptions import NotFoundError
 from app.responses import responses
 
