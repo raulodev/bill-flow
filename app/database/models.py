@@ -7,6 +7,36 @@ from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
 
+class Permission(str, Enum):
+    READ = "READ"
+    DELETE = "DELETE"
+    CREATE = "CREATE"
+    UPDATE = "UPDATE"
+
+
+class UserBase(SQLModel):
+    username: str = Field(index=True, unique=True)
+    is_active: bool = True
+    is_superuser: bool = False
+    description: str | None = Field(max_length=255, default=None)
+
+
+class User(UserBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    password: str = Field(min_length=8, max_length=40)
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
+    updated: date = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class Tenant(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(max_length=50, index=True)
+    api_key: str = Field(max_length=255, index=True)
+    api_secret: str = Field(max_length=255)
+
+
 class AccountBase(SQLModel):
     first_name: str = Field(max_length=50, index=True)
     last_name: str | None = Field(max_length=50, default=None, index=True)
