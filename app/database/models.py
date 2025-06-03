@@ -30,12 +30,28 @@ class User(UserBase, table=True):
     )
 
 
-class Tenant(SQLModel, table=True):
-    id: Optional[int] = Field(default=None, primary_key=True)
+class TenantBase(SQLModel):
     name: str = Field(max_length=50, index=True)
-    api_key: str = Field(max_length=255, index=True)
-    api_secret: str = Field(max_length=255)
+    api_key: str = Field(max_length=255)
+    api_secret: str = Field(min_length=8, max_length=255)
     external_id: str | None = Field(default=None, unique=True, index=True)
+
+
+class Tenant(TenantBase, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
+    updated: date = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+
+class TenantResponse(SQLModel):
+    id: int
+    name: str
+    api_key: str
+    external_id: str | None = None
+    created: date
+    updated: date
 
 
 class AccountBase(SQLModel):

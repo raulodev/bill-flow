@@ -15,6 +15,7 @@ from app.custom_fields.api import router as custom_fields_router
 from app.database.deps import create_db_and_tables, init_db
 from app.products.api import router as product_router
 from app.subscriptions.api import router as subscription_router
+from app.tenant.api import router as tenant_router
 
 
 @asynccontextmanager
@@ -67,3 +68,4 @@ app.include_router(product_router, prefix="/v1", tags=["Products"])
 app.include_router(address_router, prefix="/v1", tags=["Addresses"])
 app.include_router(custom_fields_router, prefix="/v1", tags=["Custom Fields"])
 app.include_router(subscription_router, prefix="/v1", tags=["Subscriptions"])
+app.include_router(tenant_router, prefix="/v1", tags=["Tenants"])
