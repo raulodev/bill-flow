@@ -6,7 +6,7 @@ from sqlmodel import select
 
 from app.database.deps import CurrentUser, SessionDep
 from app.database.models import Tenant, TenantBase, TenantResponse
-from app.exceptions import NotFoundError, BadRequestError
+from app.exceptions import BadRequestError
 from app.responses import responses
 from app.security import get_password_hash
 
