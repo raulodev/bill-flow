@@ -4,7 +4,7 @@ from fastapi import APIRouter, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
-from app.database.deps import SessionDep
+from app.database.deps import SessionDep, CurrentTenant
 from app.database.models import Account, AccountBase, AccountWithCustomFieldsAndAddress
 from app.exceptions import BadRequestError, NotFoundError
 from app.responses import responses
@@ -13,7 +13,10 @@ router = APIRouter(prefix="/accounts", responses=responses)
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def create_account(account: AccountBase, session: SessionDep) -> Account:
+async def create_account(
+    account: AccountBase, session: SessionDep, current_tenant: CurrentTenant
+) -> Account:
+
     account_db = Account.model_validate(account)
 
     try:

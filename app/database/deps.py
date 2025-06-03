@@ -1,4 +1,4 @@
-from typing import Annotated, Tuple
+from typing import Annotated
 
 from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader, HTTPBasic, HTTPBasicCredentials
@@ -82,21 +82,24 @@ def get_current_user(
     return user
 
 
-# def get_current_user_and_tenant(
-#     session: SessionDep,
-#     credentials: CredentialsDep,
-#     key: ApiKeyDep,
-#     secret: ApiSecretDep,
-# ) -> Tuple[User, Tenant]:
-
-#     # user = session.get(User, 5)
-#     # if not user:
-#     #     raise HTTPException(status_code=404, detail="User not found")
-#     # if not user.is_active:
-#     #     raise HTTPException(status_code=400, detail="Inactive user")
-#     # return user
-
-#     return (None, None)
-
 CurrentUser = Annotated[User, Depends(get_current_user)]
-# CurrentUserAndTenant = Annotated[User, Depends(get_current_user_and_tenant)]
+
+
+def get_current_tenant(
+    session: SessionDep,
+    key: ApiKeyDep,
+    secret: ApiSecretDep,
+) -> Tenant:
+
+    tenant = session.exec(select(Tenant).where(Tenant.api_key == key)).first()
+
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Tenant not found with this key")
+
+    if not verify_password(secret, tenant.api_secret):
+        raise HTTPException(status_code=400, detail="Incorrect tenant credentials")
+
+    return tenant
+
+
+CurrentTenant = Annotated[User, Depends(get_current_tenant)]
