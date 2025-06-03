@@ -2,11 +2,11 @@ from typing import Annotated, Tuple
 
 from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader, HTTPBasic, HTTPBasicCredentials
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, SQLModel, create_engine, select
 
-# pylint: disable=unused-import
 from app.database.models import Tenant, User
-from app.settings import DATABASE_URL
+from app.security import get_password_hash, verify_password
+from app.settings import ADMIN_PASSWORD, ADMIN_USERNAME, DATABASE_URL
 
 connect_args = {"check_same_thread": False}
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
@@ -18,6 +18,23 @@ def create_db_and_tables():
 
 def clear_db_and_tables():
     SQLModel.metadata.drop_all(engine)
+
+
+def init_db():
+    with Session(engine) as session:
+        user = session.exec(select(User).where(User.username == ADMIN_USERNAME)).first()
+
+        if not user:
+
+            user = User(
+                username=ADMIN_USERNAME,
+                is_superuser=True,
+                description="Admin",
+                password=get_password_hash(ADMIN_PASSWORD),
+            )
+
+            session.add(user)
+            session.commit()
 
 
 def get_session():
@@ -46,21 +63,40 @@ CredentialsDep = Annotated[HTTPBasicCredentials, Depends(security)]
 SessionDep = Annotated[Session, Depends(get_session)]
 
 
-def get_current_user_and_tenant(
+def get_current_user(
     session: SessionDep,
     credentials: CredentialsDep,
-    key: ApiKeyDep,
-    secret: ApiSecretDep,
-) -> Tuple[User, Tenant]:
+) -> User:
 
-    # user = session.get(User, 5)
-    # if not user:
-    #     raise HTTPException(status_code=404, detail="User not found")
-    # if not user.is_active:
-    #     raise HTTPException(status_code=400, detail="Inactive user")
-    # return user
+    user = session.exec(
+        select(User).where(User.username == credentials.username)
+    ).first()
 
-    return (None, None)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not user.is_active:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    if not verify_password(credentials.password, user.password):
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+
+    return user
 
 
-CurrentUserAndTenant = Annotated[User, Depends(get_current_user_and_tenant)]
+# def get_current_user_and_tenant(
+#     session: SessionDep,
+#     credentials: CredentialsDep,
+#     key: ApiKeyDep,
+#     secret: ApiSecretDep,
+# ) -> Tuple[User, Tenant]:
+
+#     # user = session.get(User, 5)
+#     # if not user:
+#     #     raise HTTPException(status_code=404, detail="User not found")
+#     # if not user.is_active:
+#     #     raise HTTPException(status_code=400, detail="Inactive user")
+#     # return user
+
+#     return (None, None)
+
+CurrentUser = Annotated[User, Depends(get_current_user)]
+# CurrentUserAndTenant = Annotated[User, Depends(get_current_user_and_tenant)]

@@ -12,7 +12,7 @@ from app.accounts.api import router as account_router
 from app.addresses.api import router as address_router
 from app.credit.api import router as credit_router
 from app.custom_fields.api import router as custom_fields_router
-from app.database.deps import create_db_and_tables
+from app.database.deps import create_db_and_tables, init_db
 from app.products.api import router as product_router
 from app.subscriptions.api import router as subscription_router
 
@@ -20,6 +20,7 @@ from app.subscriptions.api import router as subscription_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    init_db()
     yield
 
 

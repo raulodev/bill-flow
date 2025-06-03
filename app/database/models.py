@@ -35,6 +35,7 @@ class Tenant(SQLModel, table=True):
     name: str = Field(max_length=50, index=True)
     api_key: str = Field(max_length=255, index=True)
     api_secret: str = Field(max_length=255)
+    external_id: str | None = Field(default=None, unique=True, index=True)
 
 
 class AccountBase(SQLModel):
