@@ -78,6 +78,7 @@ class Account(AccountBase, table=True):
     credit_history: List["CreditHistory"] = Relationship(
         back_populates="account", cascade_delete=True
     )
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
@@ -85,6 +86,7 @@ class Account(AccountBase, table=True):
 
 
 class AccountWithCustomFieldsAndAddress(AccountBase):
+    tenant_id: int
     credit: Decimal
     custom_fields: List["CustomField"] = []
     address: Optional["Address"] = None
