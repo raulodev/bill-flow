@@ -142,6 +142,7 @@ class Address(AddressBase, table=True):
         default=None, foreign_key="account.id", ondelete="CASCADE"
     )
     account: Account | None = Relationship(back_populates="address")
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
@@ -149,6 +150,7 @@ class Address(AddressBase, table=True):
 
 
 class AddressWithAccount(AddressBase):
+    tenant_id: int
     account: Optional["Account"] = None
 
 
