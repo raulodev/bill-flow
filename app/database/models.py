@@ -117,6 +117,7 @@ class CreditHistory(CreditBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     account: Account = Relationship(back_populates="credit_history")
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     type: CreditType = Field(default=CreditType.ADD)
     created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(

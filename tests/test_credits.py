@@ -1,15 +1,17 @@
 from fastapi.testclient import TestClient
+
 from app.database.models import Account
+from tests.conftest import AUTH_HEADERS
 
 
 def test_add_credit(client: TestClient, db):
-    account = Account(first_name="1", email="test@example.com")
+    account = Account(first_name="1", email="test@example.com", tenant_id=1)
     db.add(account)
     db.commit()
 
     data = {"amount": "100.000", "account_id": 1}
 
-    response = client.post("/v1/credits/add", json=data)
+    response = client.post("/v1/credits/add", json=data, headers=AUTH_HEADERS)
 
     assert response.status_code == 201
 
@@ -27,19 +29,19 @@ def test_add_credit_error(client: TestClient, db):
 
     data = {"amount": "100.000", "account_id": 1}
 
-    response = client.post("/v1/credits/add", json=data)
+    response = client.post("/v1/credits/add", json=data, headers=AUTH_HEADERS)
 
     assert response.status_code == 404
 
 
 def test_delete_credit(client: TestClient, db):
-    account = Account(first_name="1", email="test@example.com", credit=100)
+    account = Account(first_name="1", email="test@example.com", credit=100, tenant_id=1)
     db.add(account)
     db.commit()
 
     data = {"amount": "100.000", "account_id": 1}
 
-    response = client.post("/v1/credits/delete", json=data)
+    response = client.post("/v1/credits/delete", json=data, headers=AUTH_HEADERS)
 
     assert response.status_code == 200
 
@@ -57,6 +59,6 @@ def test_delete_credit_error(client: TestClient, db):
 
     data = {"amount": "100.000", "account_id": 1}
 
-    response = client.post("/v1/credits/delete", json=data)
+    response = client.post("/v1/credits/delete", json=data, headers=AUTH_HEADERS)
 
     assert response.status_code == 404
