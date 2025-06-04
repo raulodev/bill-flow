@@ -183,7 +183,7 @@ class CustomField(CustomFieldBase, table=True):
     subscription: Optional["Subscription"] = Relationship(
         back_populates="custom_fields"
     )
-
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
@@ -191,6 +191,7 @@ class CustomField(CustomFieldBase, table=True):
 
 
 class CustomFieldWithAccountAndProduct(CustomFieldBase):
+    tenant_id: int
     account: Optional["Account"] = None
     product: Optional["Product"] = None
 
