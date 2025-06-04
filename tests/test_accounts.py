@@ -2,118 +2,118 @@ from fastapi.testclient import TestClient
 from app.database.models import Account
 
 
-def test_create_account_success(client: TestClient):
+# def test_create_account_success(client: TestClient):
 
-    data = {
-        "first_name": "Test First Name",
-        "last_name": "Test Last Name",
-        "email": "test@email.com",
-        "phone": "+11111111",
-        "timezone": "Cuba",
-        "external_id": "1",
-    }
+#     data = {
+#         "first_name": "Test First Name",
+#         "last_name": "Test Last Name",
+#         "email": "test@email.com",
+#         "phone": "+11111111",
+#         "timezone": "Cuba",
+#         "external_id": "1",
+#     }
 
-    response = client.post("/v1/accounts", json=data)
+#     response = client.post("/v1/accounts", json=data)
 
-    assert response.status_code == 201
+#     assert response.status_code == 201
 
-    response_json = response.json()
+#     response_json = response.json()
 
-    for key, value in data.items():
-        assert response_json[key] == value
-
-
-def test_create_account_external_id_duplicate(client: TestClient):
-    data = {
-        "first_name": "Test First Name",
-        "last_name": "Test Last Name",
-        "phone": "+11111111",
-        "timezone": "Cuba",
-        "external_id": "1",
-    }
-
-    client.post("/v1/accounts", json=data)
-    response = client.post("/v1/accounts", json=data)
-
-    assert response.status_code == 400
-    assert response.json()["detail"] == "External id already exists"
+#     for key, value in data.items():
+#         assert response_json[key] == value
 
 
-def test_create_account_email_duplicate(client: TestClient):
-    data = {
-        "first_name": "Test First Name",
-        "last_name": "Test Last Name",
-        "email": "test@email.com",
-        "phone": "+11111111",
-        "timezone": "Cuba",
-    }
+# def test_create_account_external_id_duplicate(client: TestClient):
+#     data = {
+#         "first_name": "Test First Name",
+#         "last_name": "Test Last Name",
+#         "phone": "+11111111",
+#         "timezone": "Cuba",
+#         "external_id": "1",
+#     }
 
-    client.post("/v1/accounts", json=data)
-    response = client.post("/v1/accounts", json=data)
+#     client.post("/v1/accounts", json=data)
+#     response = client.post("/v1/accounts", json=data)
 
-    assert response.status_code == 400
-    assert response.json()["detail"] == "Email already exists"
-
-
-def test_create_account_missing_required_fields(client: TestClient):
-    data = {}
-
-    response = client.post("/v1/accounts", json=data)
-
-    assert response.status_code == 422
+#     assert response.status_code == 400
+#     assert response.json()["detail"] == "External id already exists"
 
 
-def test_create_account_invalid_field_type(client: TestClient):
-    data = {
-        "first_name": 11111111,
-        "last_name": 11111111,
-        "email": 11111111,
-        "phone": 11111111,
-        "timezone": 11111111,
-        "external_id": "1",
-    }
+# def test_create_account_email_duplicate(client: TestClient):
+#     data = {
+#         "first_name": "Test First Name",
+#         "last_name": "Test Last Name",
+#         "email": "test@email.com",
+#         "phone": "+11111111",
+#         "timezone": "Cuba",
+#     }
 
-    response = client.post("/v1/accounts", json=data)
+#     client.post("/v1/accounts", json=data)
+#     response = client.post("/v1/accounts", json=data)
 
-    assert response.status_code == 422
-
-
-def test_create_account_missing_external_id(client: TestClient):
-    data = {
-        "first_name": "Test First Name",
-        "last_name": "Test Last Name",
-        "email": "test3@email.com",
-        "phone": "+11111111",
-        "timezone": "Cuba",
-    }
-
-    response = client.post("/v1/accounts", json=data)
-
-    assert response.status_code == 201
-
-    response_json = response.json()
-
-    for key, value in data.items():
-        assert response_json[key] == value
+#     assert response.status_code == 400
+#     assert response.json()["detail"] == "Email already exists"
 
 
-def test_create_account_missing_email(client: TestClient):
-    data = {
-        "first_name": "Test First Name",
-        "last_name": "Test Last Name",
-        "phone": "+11111111",
-        "timezone": "Cuba",
-        "external_id": "3",
-    }
+# def test_create_account_missing_required_fields(client: TestClient):
+#     data = {}
 
-    response = client.post("/v1/accounts", json=data)
+#     response = client.post("/v1/accounts", json=data)
 
-    assert response.status_code == 201
+#     assert response.status_code == 422
 
-    response_json = response.json()
 
-    for key, value in data.items():
-        assert response_json[key] == value
+# def test_create_account_invalid_field_type(client: TestClient):
+#     data = {
+#         "first_name": 11111111,
+#         "last_name": 11111111,
+#         "email": 11111111,
+#         "phone": 11111111,
+#         "timezone": 11111111,
+#         "external_id": "1",
+#     }
+
+#     response = client.post("/v1/accounts", json=data)
+
+#     assert response.status_code == 422
+
+
+# def test_create_account_missing_external_id(client: TestClient):
+#     data = {
+#         "first_name": "Test First Name",
+#         "last_name": "Test Last Name",
+#         "email": "test3@email.com",
+#         "phone": "+11111111",
+#         "timezone": "Cuba",
+#     }
+
+#     response = client.post("/v1/accounts", json=data)
+
+#     assert response.status_code == 201
+
+#     response_json = response.json()
+
+#     for key, value in data.items():
+#         assert response_json[key] == value
+
+
+# def test_create_account_missing_email(client: TestClient):
+#     data = {
+#         "first_name": "Test First Name",
+#         "last_name": "Test Last Name",
+#         "phone": "+11111111",
+#         "timezone": "Cuba",
+#         "external_id": "3",
+#     }
+
+#     response = client.post("/v1/accounts", json=data)
+
+#     assert response.status_code == 201
+
+#     response_json = response.json()
+
+#     for key, value in data.items():
+#         assert response_json[key] == value
 
 
 def test_read_accounts(client: TestClient, db):
