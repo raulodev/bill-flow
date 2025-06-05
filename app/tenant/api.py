@@ -41,3 +41,6 @@ def read_tenants(
 ) -> list[TenantResponse]:
     tenants = session.exec(select(Tenant).offset(offset).limit(limit)).all()
     return tenants
+
+
+# TODO: Actualizar tenant

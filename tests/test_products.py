@@ -1,11 +1,13 @@
 from fastapi.testclient import TestClient
+
 from app.database.models import Product
+from tests.conftest import AUTH_HEADERS
 
 
 def test_create_product(client: TestClient):
     data = {"name": "Phone", "price": "500.000"}
 
-    response = client.post("/v1/products", json=data)
+    response = client.post("/v1/products", json=data, headers=AUTH_HEADERS)
 
     assert response.status_code == 201
 
@@ -22,8 +24,8 @@ def test_create_product_external_id_duplicate(client: TestClient):
         "external_id": "1",
     }
 
-    client.post("/v1/products", json=data)
-    response = client.post("/v1/products", json=data)
+    client.post("/v1/products", json=data, headers=AUTH_HEADERS)
+    response = client.post("/v1/products", json=data, headers=AUTH_HEADERS)
 
     assert response.status_code == 400
     assert response.json()["detail"] == "External id already exists"
@@ -31,23 +33,23 @@ def test_create_product_external_id_duplicate(client: TestClient):
 
 def test_read_products(client: TestClient, db):
 
-    product1 = Product(name="product 1", price=30, is_available=True)
-    product2 = Product(name="product 2", price=20, is_available=False)
+    product1 = Product(name="product 1", price=30, is_available=True, tenant_id=1)
+    product2 = Product(name="product 2", price=20, is_available=False, tenant_id=1)
     db.add(product1)
     db.add(product2)
     db.commit()
 
-    response = client.get("/v1/products")
+    response = client.get("/v1/products", headers=AUTH_HEADERS)
 
     assert response.status_code == 200
     assert len(response.json()) == 2
 
-    response = client.get("/v1/products/?status=AVAILABLE")
+    response = client.get("/v1/products/?status=AVAILABLE", headers=AUTH_HEADERS)
 
     assert response.status_code == 200
     assert len(response.json()) == 1
 
-    response = client.get("/v1/products/?status=NO_AVAILABLE")
+    response = client.get("/v1/products/?status=NO_AVAILABLE", headers=AUTH_HEADERS)
 
     assert response.status_code == 200
     assert len(response.json()) == 1
@@ -55,11 +57,11 @@ def test_read_products(client: TestClient, db):
 
 def test_retrieve_product(client: TestClient, db):
 
-    product = Product(name="product 1", price=30, is_available=True)
+    product = Product(name="product 1", price=30, is_available=True, tenant_id=1)
     db.add(product)
     db.commit()
 
-    response = client.get("/v1/products/1")
+    response = client.get("/v1/products/1", headers=AUTH_HEADERS)
 
     assert response.status_code == 200
 
@@ -72,13 +74,13 @@ def test_retrieve_product(client: TestClient, db):
 
 def test_update_product(client: TestClient, db):
 
-    product = Product(name="product 1", price=30, is_available=True)
+    product = Product(name="product 1", price=30, is_available=True, tenant_id=1)
     db.add(product)
     db.commit()
 
     data = {"name": "Phone", "price": "500.000"}
 
-    response = client.put("/v1/products/1", json=data)
+    response = client.put("/v1/products/1", json=data, headers=AUTH_HEADERS)
 
     assert response.status_code == 200
 
@@ -90,14 +92,14 @@ def test_update_product(client: TestClient, db):
 
 def test_delete_prduct(client: TestClient, db):
 
-    product = Product(name="product 1", price=30)
+    product = Product(name="product 1", price=30, tenant_id=1)
     db.add(product)
     db.commit()
-    response = client.delete("/v1/products/1")
+    response = client.delete("/v1/products/1", headers=AUTH_HEADERS)
 
     assert response.status_code == 204
 
-    response = client.get("/v1/products/1")
+    response = client.get("/v1/products/1", headers=AUTH_HEADERS)
 
     assert response.status_code == 200
 
@@ -108,6 +110,6 @@ def test_delete_prduct(client: TestClient, db):
 
 def test_delete_product_error(client: TestClient):
 
-    response = client.delete("/v1/products/999")
+    response = client.delete("/v1/products/999", headers=AUTH_HEADERS)
 
     assert response.status_code == 404

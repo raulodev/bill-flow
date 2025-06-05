@@ -209,6 +209,7 @@ class Product(ProductBase, table=True):
     custom_fields: List["CustomField"] = Relationship(
         back_populates="product", cascade_delete=True
     )
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
