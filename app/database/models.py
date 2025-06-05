@@ -39,6 +39,7 @@ class TenantBase(SQLModel):
 
 class Tenant(TenantBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id")
     created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False

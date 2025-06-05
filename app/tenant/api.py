@@ -6,7 +6,7 @@ from sqlmodel import select
 
 from app.database.deps import CurrentUser, SessionDep
 from app.database.models import Tenant, TenantBase, TenantResponse
-from app.exceptions import BadRequestError
+from app.exceptions import BadRequestError, NotFoundError
 from app.responses import responses
 from app.security import get_password_hash
 
@@ -22,6 +22,7 @@ async def create_tenant(
         tenant,
         update={
             "api_secret": get_password_hash(tenant.api_secret),
+            "user_id": current_user.id,
         },
     )
     try:
@@ -36,6 +37,7 @@ async def create_tenant(
 @router.get("/")
 def read_tenants(
     session: SessionDep,
+    current_user: CurrentUser,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
 ) -> list[TenantResponse]:
@@ -43,4 +45,29 @@ def read_tenants(
     return tenants
 
 
-# TODO: Actualizar tenant
+@router.put("/{tenant_id}")
+def update_tenants(
+    tenant_id: int,
+    tenant: TenantBase,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> TenantResponse:
+    tenant_db = session.exec(select(Tenant).where(Tenant.id == tenant_id)).first()
+
+    if not tenant_db:
+        raise NotFoundError()
+
+    tenant_data = tenant.model_dump(exclude_unset=True)
+
+    if tenant_data.get("api_secret"):
+        tenant_data["api_secret"] = get_password_hash(tenant.api_secret)
+
+    tenant_db.sqlmodel_update(tenant_data)
+
+    try:
+        session.add(tenant_db)
+        session.commit()
+        session.refresh(tenant_db)
+        return tenant_db
+    except IntegrityError as exc:
+        raise BadRequestError(detail="External id already exists") from exc
