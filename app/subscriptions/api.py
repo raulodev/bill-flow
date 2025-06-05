@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
+from app.database.deps import CurrentTenant, SessionDep
 from app.database.models import (
     Account,
     State,
@@ -14,7 +15,6 @@ from app.database.models import (
     SubscriptionResponse,
     SubscriptionWithAccountAndCustomFields,
 )
-from app.database.deps import SessionDep
 from app.exceptions import BadRequestError, NotFoundError
 from app.responses import responses
 
@@ -23,22 +23,24 @@ router = APIRouter(prefix="/subscriptions", responses=responses)
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_subscription(
-    subscription: SubscriptionCreate, session: SessionDep
+    subscription: SubscriptionCreate, session: SessionDep, current_tenant: CurrentTenant
 ) -> SubscriptionResponse:
 
     product_ids = [product.product_id for product in subscription.products]
     if len(product_ids) != len(set(product_ids)):
         raise BadRequestError(
-            detail="A product cannot be repeated in the same subscription."
+            detail="A product cannot be repeated in the same subscription"
+        )
+
+    if (subscription.trial_time_unit and not subscription.trial_time) or (
+        subscription.trial_time and not subscription.trial_time_unit
+    ):
+        raise BadRequestError(
+            detail="Both trial_time and trial_time_unit are required if one is provided"
         )
 
     if not session.get(Account, subscription.account_id):
         raise BadRequestError(detail="Account not exists")
-
-    subscription_data = subscription.model_dump(exclude={"products"})
-    subscription_db = Subscription(**subscription_data)
-
-    session.add(subscription_db)
 
     products = [
         SubscriptionProduct(
@@ -48,14 +50,18 @@ async def create_subscription(
         for product in subscription.products
     ]
 
+    delattr(subscription, "products")
+
+    subscription_db = Subscription.model_validate(
+        subscription, update={"tenant_id": current_tenant.id}
+    )
+    session.add(subscription_db)
     subscription_db.products = products
 
     try:
-
         session.commit()
         session.refresh(subscription_db)
         return subscription_db
-
     except IntegrityError as exc:
         raise BadRequestError(detail="External id already exists") from exc
 
@@ -63,6 +69,7 @@ async def create_subscription(
 @router.get("/")
 def read_subscriptions(
     session: SessionDep,
+    current_tenant: CurrentTenant,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
     state: Literal[  # pylint: disable=redefined-outer-name
@@ -74,7 +81,14 @@ def read_subscriptions(
 
     if state != "ALL":
 
-        query = select(Subscription).filter_by(state=state).offset(offset).limit(limit)
+        query = (
+            select(Subscription)
+            .where(
+                Subscription.tenant_id == current_tenant.id, Subscription.state == state
+            )
+            .offset(offset)
+            .limit(limit)
+        )
 
     subscriptions = session.exec(query).all()
 
@@ -83,9 +97,16 @@ def read_subscriptions(
 
 @router.get("/{subscription_id}")
 def read_subscription(
-    subscription_id: int, session: SessionDep
+    subscription_id: int,
+    session: SessionDep,
+    current_tenant: CurrentTenant,
 ) -> SubscriptionWithAccountAndCustomFields:
-    subscription = session.get(Subscription, subscription_id)
+    subscription = session.exec(
+        select(Subscription).where(
+            Subscription.id == subscription_id,
+            Subscription.tenant_id == current_tenant.id,
+        )
+    ).first()
     if not subscription:
         raise NotFoundError()
     return subscription
@@ -93,11 +114,16 @@ def read_subscription(
 
 @router.get("/external/{external_id}")
 def read_subscription_by_external_id(
-    external_id: str, session: SessionDep
+    external_id: str,
+    session: SessionDep,
+    current_tenant: CurrentTenant,
 ) -> SubscriptionWithAccountAndCustomFields:
     subscription = session.exec(
-        select(Subscription).filter_by(external_id=external_id)
-    ).one_or_none()
+        select(Subscription).where(
+            Subscription.external_id == external_id,
+            Subscription.tenant_id == current_tenant.id,
+        )
+    ).first()
     if not subscription:
         raise NotFoundError()
     return subscription
@@ -107,9 +133,16 @@ def read_subscription_by_external_id(
 def cancel_subscription(
     subscription_id: int,
     session: SessionDep,
+    current_tenant: CurrentTenant,
     end_date: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
 ) -> SubscriptionResponse:
-    subscription = session.get(Subscription, subscription_id)
+
+    subscription = session.exec(
+        select(Subscription).where(
+            Subscription.id == subscription_id,
+            Subscription.tenant_id == current_tenant.id,
+        )
+    ).first()
     if not subscription:
         raise NotFoundError()
 
@@ -131,9 +164,18 @@ def cancel_subscription(
 
 @router.put("/{subscription_id}/billing_day")
 def update_billing_day(
-    subscription_id: int, day: Annotated[int, Query(ge=0, le=31)], session: SessionDep
+    subscription_id: int,
+    day: Annotated[int, Query(ge=0, le=31)],
+    session: SessionDep,
+    current_tenant: CurrentTenant,
 ) -> SubscriptionWithAccountAndCustomFields:
-    subscription = session.get(Subscription, subscription_id)
+
+    subscription = session.exec(
+        select(Subscription).where(
+            Subscription.id == subscription_id,
+            Subscription.tenant_id == current_tenant.id,
+        )
+    ).first()
     if not subscription:
         raise NotFoundError()
 
@@ -151,9 +193,15 @@ def update_billing_day(
 def pause_subscription(
     subscription_id: int,
     session: SessionDep,
+    current_tenant: CurrentTenant,
     resume: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
 ) -> SubscriptionWithAccountAndCustomFields:
-    subscription = session.get(Subscription, subscription_id)
+    subscription = session.exec(
+        select(Subscription).where(
+            Subscription.id == subscription_id,
+            Subscription.tenant_id == current_tenant.id,
+        )
+    ).first()
     if not subscription:
         raise NotFoundError()
 

@@ -299,6 +299,7 @@ class Subscription(SubscriptionBase, table=True):
     resume_date: date | None = Field(default=None)
     state: State = Field(default=State.ACTIVE)
     billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
