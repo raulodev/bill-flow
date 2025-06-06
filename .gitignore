@@ -5,3 +5,4 @@ database.db
 .pytest_cache
 celerybeat-schedule
 .coverage
+coverage.xml
