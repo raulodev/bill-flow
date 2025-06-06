@@ -1,0 +1,50 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: bill-flow-redis
+    restart: always
+    expose:
+      - 6379
+
+
+  bill-flow:
+    image: raulodev/bill-flow:1.0.4-alpha
+    container_name: bill-flow
+    restart: always
+    ports:
+      - "8080:8080"      
+    env_file:
+      - ../.env.example
+    depends_on:
+      - redis
+    volumes:
+      - bill-flow-shared-data:/database.db
+
+  bill-flow-celery:
+    image: raulodev/bill-flow:1.0.4-alpha
+    container_name: bill-flow-celery
+    restart: always
+    env_file:
+      - ../.env.example    
+    command: ["celery" ,"-A" ,"app.scheduler", "worker", "--loglevel=debug"]
+    depends_on:
+      - redis
+      - bill-flow
+    volumes:
+      - bill-flow-shared-data:/database.db
+
+  bill-flow-beat:
+    image: raulodev/bill-flow:1.0.4-alpha
+    container_name: bill-flow-beat
+    restart: always
+    env_file:
+      - ../.env.example      
+    command: ["celery" ,"-A" ,"app.scheduler", "beat", "--loglevel=debug"]
+    depends_on:
+      - redis
+      - bill-flow
+    volumes:
+      - bill-flow-shared-data:/database.db
+
+volumes:
+  bill-flow-shared-data:
