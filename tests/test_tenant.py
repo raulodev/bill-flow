@@ -2,6 +2,23 @@ from fastapi.testclient import TestClient
 from app.database.models import Tenant
 
 
+def test_auth_error(client: TestClient):
+
+    clients = {
+        client.post: "/v1/tenants",
+        client.get: "/v1/tenants",
+        client.put: "/v1/tenants/1",
+    }
+
+    for cli, url in clients.items():
+        response1 = cli(url=url)
+        response2 = cli(url=url, auth=("12345abcd", "12345abcd"))
+        response3 = cli(url=url, auth=("admin", "12345abcd"))
+        assert response1.status_code == 401
+        assert response2.status_code == 401
+        assert response3.status_code == 401
+
+
 def test_create_tenant_success(client: TestClient):
 
     data = {

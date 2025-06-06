@@ -72,12 +72,12 @@ def get_current_user(
         select(User).where(User.username == credentials.username)
     ).first()
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if not user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    if not verify_password(credentials.password, user.password):
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    if (
+        not user
+        or not user.is_active
+        or not verify_password(credentials.password, user.password)
+    ):
+        raise HTTPException(status_code=401, detail="Incorrect username or password")
 
     return user
 
@@ -93,11 +93,8 @@ def get_current_tenant(
 
     tenant = session.exec(select(Tenant).where(Tenant.api_key == key)).first()
 
-    if not tenant:
-        raise HTTPException(status_code=404, detail="Tenant not found with this key")
-
-    if not verify_password(secret, tenant.api_secret):
-        raise HTTPException(status_code=400, detail="Incorrect tenant credentials")
+    if not tenant or not verify_password(secret, tenant.api_secret):
+        raise HTTPException(status_code=401, detail="Incorrect tenant credentials")
 
     return tenant
 

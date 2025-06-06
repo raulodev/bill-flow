@@ -1,7 +1,44 @@
 from fastapi.testclient import TestClient
 
 from app.database.models import Account, BillingPeriod, State, Subscription
-from tests.conftest import AUTH_HEADERS
+from tests.conftest import AUTH_HEADERS, TENANT_TEST_API_KEY
+
+
+def test_auth_error(client: TestClient):
+
+    retrieve = client.get
+    retrieve_external_id = client.get
+    update_billing_day = client.put
+
+    clients = {
+        client.post: "/v1/subscriptions",
+        client.get: "/v1/subscriptions",
+        retrieve: "/v1/subscriptions/1",
+        retrieve_external_id: "/v1/subscriptions/external/1",
+        client.delete: "/v1/subscriptions/1",
+        update_billing_day: "/v1/subscriptions/1/billing_day",
+        client.put: "/v1/subscriptions/1/pause",
+    }
+
+    for cli, url in clients.items():
+        response1 = cli(url=url)
+        response2 = cli(
+            url=url,
+            headers={
+                "X-BillFlow-ApiSecret": "12345abcd",
+                "X-BillFlow-ApiKey": "12345abcd",
+            },
+        )
+        response3 = cli(
+            url=url,
+            headers={
+                "X-BillFlow-ApiSecret": "12345abcd",
+                "X-BillFlow-ApiKey": TENANT_TEST_API_KEY,
+            },
+        )
+        assert response1.status_code == 403
+        assert response2.status_code == 401
+        assert response3.status_code == 401
 
 
 def test_create_subscription(client: TestClient, db):

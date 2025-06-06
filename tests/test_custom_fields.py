@@ -1,7 +1,40 @@
 from fastapi.testclient import TestClient
 
 from app.database.models import CustomField
-from tests.conftest import AUTH_HEADERS
+from tests.conftest import AUTH_HEADERS, TENANT_TEST_API_KEY
+
+
+def test_auth_error(client: TestClient):
+
+    retrieve = client.get
+
+    clients = {
+        client.post: "/v1/customFields",
+        client.get: "/v1/customFields",
+        retrieve: "/v1/customFields/1",
+        client.delete: "/v1/customFields/1",
+        client.put: "/v1/customFields/1",
+    }
+
+    for cli, url in clients.items():
+        response1 = cli(url=url)
+        response2 = cli(
+            url=url,
+            headers={
+                "X-BillFlow-ApiSecret": "12345abcd",
+                "X-BillFlow-ApiKey": "12345abcd",
+            },
+        )
+        response3 = cli(
+            url=url,
+            headers={
+                "X-BillFlow-ApiSecret": "12345abcd",
+                "X-BillFlow-ApiKey": TENANT_TEST_API_KEY,
+            },
+        )
+        assert response1.status_code == 403
+        assert response2.status_code == 401
+        assert response3.status_code == 401
 
 
 def test_create_custom_field(client: TestClient):

@@ -1,7 +1,37 @@
 from fastapi.testclient import TestClient
 
 from app.database.models import Account
-from tests.conftest import AUTH_HEADERS
+from tests.conftest import AUTH_HEADERS, TENANT_TEST_API_KEY
+
+
+def test_auth_error(client: TestClient):
+
+    post2 = client.post
+
+    clients = {
+        client.post: "/v1/credits/add",
+        post2: "/v1/credits/delete",
+    }
+
+    for cli, url in clients.items():
+        response1 = cli(url=url)
+        response2 = cli(
+            url=url,
+            headers={
+                "X-BillFlow-ApiSecret": "12345abcd",
+                "X-BillFlow-ApiKey": "12345abcd",
+            },
+        )
+        response3 = cli(
+            url=url,
+            headers={
+                "X-BillFlow-ApiSecret": "12345abcd",
+                "X-BillFlow-ApiKey": TENANT_TEST_API_KEY,
+            },
+        )
+        assert response1.status_code == 403
+        assert response2.status_code == 401
+        assert response3.status_code == 401
 
 
 def test_add_credit(client: TestClient, db):
