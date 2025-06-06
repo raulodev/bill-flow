@@ -8,6 +8,7 @@ help:
 	@echo "  flower         Starts the flower web server"
 	@echo "  celery-beat    Starts the celery and beat together"
 	@echo "  uvicorn        Starts the uvicorn server"
+	@echo "  mkdocs         Starts the mkdocs server"
 
 dev:
 	fastapi dev app/main.py
@@ -30,3 +31,6 @@ celery-beat:
 
 uvicorn:
 	uvicorn app.main:app --host 0.0.0.0 --port 8080 --workers 1
+
+mkdocs:
+	mkdocs serve
