@@ -263,15 +263,15 @@ class SubscriptionProduct(SubscriptionProductBase, table=True):
 
     __tablename__ = "subscription_product"
 
-    product_id: int = Field(
-        primary_key=True, foreign_key="product.id", ondelete="CASCADE"
-    )
     subscription_id: int = Field(
         primary_key=True, foreign_key="subscription.id", ondelete="CASCADE"
     )
-
     subscription: "Subscription" = Relationship(back_populates="products")
+    product_id: int = Field(
+        primary_key=True, foreign_key="product.id", ondelete="CASCADE"
+    )
     product: "Product" = Relationship(back_populates="subscriptions")
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
@@ -296,6 +296,7 @@ class Subscription(SubscriptionBase, table=True):
     custom_fields: List["CustomField"] = Relationship(
         back_populates="subscription", cascade_delete=True
     )
+    phases: List["SubscriptionPhase"] = Relationship(back_populates="subscription")
     start_date: date = Field(default=datetime.now(timezone.utc), nullable=False)
     resume_date: date | None = Field(default=None)
     state: State = Field(default=State.ACTIVE)
@@ -324,3 +325,25 @@ class SubscriptionResponse(SubscriptionBase):
 class SubscriptionWithAccountAndCustomFields(SubscriptionResponse):
     account: Account
     custom_fields: List["CustomField"]
+
+
+class PhaseType(str, Enum):
+    TRIAL = "TRIAL"
+    PAID = "PAID"
+
+
+class SubscriptionPhase(SQLModel, table=True):
+
+    __tablename__ = "subscription_phase"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    subscription_id: int = Field(foreign_key="subscription.id", ondelete="CASCADE")
+    subscription: Subscription = Relationship(back_populates="phases")
+    phase: PhaseType = Field()
+    start_date: date = Field(nullable=False)
+    end_date: date | None = Field(default=None)
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
+    updated: date = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
