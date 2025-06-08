@@ -59,7 +59,7 @@ def log_operation(
     operation: Literal["CREATE", "READ", "UPDATE", "DELETE"],
     model: str,
     tenant_id: int,
-    status: Literal["SUCCESS", "FAILED"],
+    status: Literal["SUCCESS", "FAILED", "PENDING"],
     user_id: int = None,
     detail: str | None = None,
     level: Literal["info", "warning", "error"] = "info",
