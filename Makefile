@@ -11,7 +11,7 @@ help:
 	@echo "  mkdocs         Starts the mkdocs server"
 
 dev:
-	fastapi dev app/main.py
+	uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 1 --reload
 
 pytest:
 	pytest --cov=app --cov-report=xml tests/
@@ -28,9 +28,6 @@ flower:
 
 celery-beat:
 	celery -A app.scheduler worker --beat --loglevel=debug
-
-uvicorn:
-	uvicorn app.main:app --host 0.0.0.0 --port 8080 --workers 1
 
 mkdocs:
 	mkdocs serve
