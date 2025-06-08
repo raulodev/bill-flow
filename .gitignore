@@ -6,3 +6,4 @@ database.db
 celerybeat-schedule
 .coverage
 coverage.xml
+app.log
