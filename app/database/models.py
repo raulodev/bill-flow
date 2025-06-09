@@ -32,7 +32,7 @@ class User(UserBase, table=True):
 
 class TenantBase(SQLModel):
     name: str = Field(max_length=50, index=True)
-    api_key: str = Field(max_length=255)
+    api_key: str = Field(max_length=255, unique=True)
     api_secret: str = Field(min_length=8, max_length=255)
     external_id: str | None = Field(default=None, unique=True, index=True)
 
