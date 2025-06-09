@@ -31,6 +31,7 @@ async def create_tenant(
         session.refresh(tenant_db)
         return tenant_db
     except IntegrityError as exc:
+        session.rollback()
         raise BadRequestError(detail="External id already exists") from exc
 
 
@@ -70,4 +71,5 @@ def update_tenants(
         session.refresh(tenant_db)
         return tenant_db
     except IntegrityError as exc:
+        session.rollback()
         raise BadRequestError(detail="External id already exists") from exc
