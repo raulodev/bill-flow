@@ -3,7 +3,7 @@ from typing import Literal
 
 from loguru import logger
 
-from app.settings import LOG_LEVEL
+from app.settings import LOG_FILE_ROTATION, LOG_LEVEL
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
@@ -32,7 +32,7 @@ logging.basicConfig(handlers=[InterceptHandler()], level=logging.INFO)
 
 logger.add(
     "app.log",
-    rotation="500 MB",
+    rotation=LOG_FILE_ROTATION,
     compression="zip",
     level=LOG_LEVEL,
     backtrace=True,
