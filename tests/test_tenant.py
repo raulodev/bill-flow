@@ -105,7 +105,7 @@ def test_update_tenant(client: TestClient, db):
     assert verify_password(data["api_secret"], tenant.api_secret)
 
 
-def test_update_tenant_error(client: TestClient, db):
+def test_update_tenant_error(client: TestClient):
 
     data = {
         "name": "Tenant Name",
