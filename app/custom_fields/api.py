@@ -9,8 +9,10 @@ from app.database.models import (
     CustomField,
     CustomFieldBase,
     CustomFieldWithAccountAndProduct,
+    Product,
+    Subscription,
 )
-from app.exceptions import NotFoundError
+from app.exceptions import NotFoundError, BadRequestError
 from app.responses import responses
 
 router = APIRouter(prefix="/customFields", responses=responses)
@@ -21,8 +23,6 @@ async def create_custom_field(
     custom_field: CustomFieldBase, session: SessionDep, current_tenant: CurrentTenant
 ) -> CustomField:
 
-    # TODO: check subs and products
-
     if custom_field.account_id:
 
         account = session.exec(
@@ -32,7 +32,29 @@ async def create_custom_field(
             )
         ).first()
         if not account:
-            raise NotFoundError(detail="Account not found")
+            raise BadRequestError(detail="Account not found")
+
+    if custom_field.product_id:
+
+        product = session.exec(
+            select(Product).where(
+                Product.id == custom_field.product_id,
+                Product.tenant_id == current_tenant.id,
+            )
+        ).first()
+        if not product:
+            raise BadRequestError(detail="Product not found")
+
+    if custom_field.subscription_id:
+
+        subscription = session.exec(
+            select(Subscription).where(
+                Subscription.id == custom_field.subscription_id,
+                Subscription.tenant_id == current_tenant.id,
+            )
+        ).first()
+        if not subscription:
+            raise BadRequestError(detail="Subscription not found")
 
     custom_field_db = CustomField.model_validate(
         custom_field, update={"tenant_id": current_tenant.id}

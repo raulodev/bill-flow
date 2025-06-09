@@ -64,6 +64,21 @@ def test_create_custom_field_error(client: TestClient):
     assert response2.status_code == 422
 
 
+def test_create_custom_field_missing_data(client: TestClient):
+
+    data1 = {"name": "test", "value": "test", "account_id": 1}
+    data2 = {"name": "test", "value": "test", "product_id": 1}
+    data3 = {"name": "test", "value": "test", "subscription_id": 1}
+
+    response1 = client.post("/v1/customFields", json=data1, headers=AUTH_HEADERS)
+    response2 = client.post("/v1/customFields", json=data2, headers=AUTH_HEADERS)
+    response3 = client.post("/v1/customFields", json=data3, headers=AUTH_HEADERS)
+
+    assert response1.status_code == 400
+    assert response2.status_code == 400
+    assert response3.status_code == 400
+
+
 def test_read_custom_fields(client: TestClient, db):
 
     custom_field1 = CustomField(name="age", value=20, tenant_id=1)
@@ -97,6 +112,13 @@ def test_retrieve_custom_fields(client: TestClient, db):
     assert response_json["value"] == custom_field.value
 
 
+def test_retrieve_custom_fields_error(client: TestClient):
+
+    response = client.get("/v1/customFields/999", headers=AUTH_HEADERS)
+
+    assert response.status_code == 404
+
+
 def test_update_custom_fields(client: TestClient, db):
 
     custom_field = CustomField(name="age", value=20, tenant_id=1)
@@ -114,6 +136,15 @@ def test_update_custom_fields(client: TestClient, db):
 
     for key, value in data.items():
         assert response_json[key] == value
+
+
+def test_update_custom_fields_error(client: TestClient):
+
+    data = {"name": "age", "value": "30"}
+
+    response = client.put("/v1/customFields/999", json=data, headers=AUTH_HEADERS)
+
+    assert response.status_code == 404
 
 
 def test_delete_custom_fields(client: TestClient, db):
