@@ -16,7 +16,6 @@ dev:
 pytest:
 	pytest --cov=app --cov-report=xml tests/
 
-
 celery:
 	celery -A app.scheduler worker --loglevel=debug
 
