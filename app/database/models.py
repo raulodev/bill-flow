@@ -319,6 +319,10 @@ class SubscriptionCreate(SubscriptionBase):
     products: List[SubscriptionProductBase]
 
 
+class UpdateBillingDay(SQLModel):
+    billing_day: int = Field(ge=0, le=31)
+
+
 class SubscriptionResponse(SubscriptionBase):
     id: int
     state: State

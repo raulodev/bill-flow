@@ -18,6 +18,7 @@ from app.database.models import (
     SubscriptionResponse,
     SubscriptionWithAccountAndCustomFields,
     TrialTimeUnit,
+    UpdateBillingDay,
 )
 from app.exceptions import BadRequestError, NotFoundError
 from app.responses import responses
@@ -235,7 +236,7 @@ def cancel_subscription(
 @router.put("/{subscription_id}/billing_day")
 def update_billing_day(
     subscription_id: int,
-    day: Annotated[int, Query(ge=0, le=31)],
+    data: UpdateBillingDay,
     session: SessionDep,
     current_tenant: CurrentTenant,
 ) -> SubscriptionWithAccountAndCustomFields:
@@ -252,7 +253,7 @@ def update_billing_day(
     if subscription.state == State.CANCELLED:
         raise BadRequestError(detail="The subscription is cancelled")
 
-    subscription.billing_day = day
+    subscription.billing_day = data.billing_day
 
     session.commit()
     session.refresh(subscription)
