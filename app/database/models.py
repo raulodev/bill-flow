@@ -46,6 +46,13 @@ class Tenant(TenantBase, table=True):
     )
 
 
+class TenantUpdate(SQLModel):
+    name: str | None = None
+    api_key: str | None = None
+    api_secret: str | None = None
+    external_id: str | None = None
+
+
 class TenantResponse(SQLModel):
     id: int
     name: str
