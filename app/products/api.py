@@ -26,6 +26,7 @@ async def create_product(
         session.refresh(product_db)
         return product_db
     except IntegrityError as exc:
+        session.rollback()
         raise BadRequestError(detail="External id already exists") from exc
 
 
@@ -123,7 +124,12 @@ def update_product(
         raise NotFoundError()
     product_data = custom_field.model_dump(exclude_unset=True)
     product_db.sqlmodel_update(product_data)
-    session.add(product_db)
-    session.commit()
-    session.refresh(product_db)
-    return product_db
+
+    try:
+        session.add(product_db)
+        session.commit()
+        session.refresh(product_db)
+        return product_db
+    except IntegrityError as exc:
+        session.rollback()
+        raise BadRequestError(detail="External id already exists") from exc

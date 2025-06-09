@@ -105,6 +105,13 @@ def test_retrieve_product(client: TestClient, db):
     assert response_json["is_available"] is True
 
 
+def test_retrieve_product_error(client: TestClient):
+
+    response = client.get("/v1/products/999", headers=AUTH_HEADERS)
+
+    assert response.status_code == 404
+
+
 def test_update_product(client: TestClient, db):
 
     product = Product(name="product 1", price=30, is_available=True, tenant_id=1)
@@ -121,6 +128,15 @@ def test_update_product(client: TestClient, db):
 
     for key, value in data.items():
         assert response_json[key] == value
+
+
+def test_update_product_error(client: TestClient):
+
+    data = {"name": "Phone", "price": "500.000"}
+
+    response = client.put("/v1/products/999", json=data, headers=AUTH_HEADERS)
+
+    assert response.status_code == 404
 
 
 def test_delete_prduct(client: TestClient, db):
