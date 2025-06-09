@@ -132,6 +132,7 @@ async def create_subscription(
         session.refresh(subscription_db)
         return subscription_db
     except IntegrityError as exc:
+        session.rollback()
         raise BadRequestError(detail="External id already exists") from exc
 
 
