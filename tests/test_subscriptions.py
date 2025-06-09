@@ -63,6 +63,42 @@ def test_create_subscription(client: TestClient, db):
     assert response.status_code == 201
 
 
+def test_create_subscription_with_trial_time(client: TestClient, db):
+
+    account = Account(
+        first_name="Example", external_id=1, email="test@example.com", tenant_id=1
+    )
+    db.add(account)
+    db.commit()
+
+    data1 = {
+        "account_id": 1,
+        "products": [
+            {"product_id": 1, "quantity": 1},
+            {"product_id": 2, "quantity": 1},
+        ],
+        "billing_period": "MONTHLY",
+        "trial_time_unit": "DAYS",
+        "trial_time": 10,
+    }
+
+    data2 = {
+        "account_id": 1,
+        "products": [
+            {"product_id": 1, "quantity": 1},
+            {"product_id": 2, "quantity": 1},
+        ],
+        "billing_period": "MONTHLY",
+        "trial_time_unit": "UNLIMITED",
+    }
+
+    response1 = client.post("/v1/subscriptions", json=data1, headers=AUTH_HEADERS)
+    response2 = client.post("/v1/subscriptions", json=data2, headers=AUTH_HEADERS)
+
+    assert response1.status_code == 201
+    assert response2.status_code == 201
+
+
 def test_create_subscription_without_account(client: TestClient):
 
     data = {
@@ -150,6 +186,27 @@ def test_create_subscription_empty_products(client: TestClient, db):
     response = client.post("/v1/subscriptions", json=data, headers=AUTH_HEADERS)
 
     assert response.status_code == 201
+
+
+def test_create_subscription_missing_trial_time(client: TestClient, db):
+
+    account = Account(
+        first_name="Example", external_id=1, email="test@example.com", tenant_id=1
+    )
+    db.add(account)
+    db.commit()
+
+    data = {
+        "account_id": 1,
+        "products": [],
+        "billing_period": "MONTHLY",
+        "external_id": "4",
+        "trial_time_unit": "DAYS",
+    }
+
+    response = client.post("/v1/subscriptions", json=data, headers=AUTH_HEADERS)
+
+    assert response.status_code == 400
 
 
 def test_read_subscriptions(client: TestClient, db):
@@ -268,6 +325,21 @@ def test_retrieve_subscription_by_external_id(client: TestClient, db):
     assert response_json["billing_period"] == BillingPeriod.BIANNUAL
 
 
+def test_retrieve_subscription_by_external_id_error(client: TestClient, db):
+
+    account = Account(
+        first_name="Example", external_id=1, email="test@example.com", tenant_id=1
+    )
+    db.add(account)
+    db.commit()
+
+    response = client.get(
+        "/v1/subscriptions/external/external_id_not_found", headers=AUTH_HEADERS
+    )
+
+    assert response.status_code == 404
+
+
 def test_cancel_subscription_error(client: TestClient, db):
 
     response = client.delete("/v1/subscriptions/1", headers=AUTH_HEADERS)
@@ -327,10 +399,45 @@ def test_update_billing_day(client: TestClient, db):
     db.add(subs)
     db.commit()
 
-    response = client.put("/v1/subscriptions/1/billing_day?day=5", headers=AUTH_HEADERS)
+    response = client.put(
+        "/v1/subscriptions/1/billing_day",
+        json={"billing_day": 5},
+        headers=AUTH_HEADERS,
+    )
 
     assert response.status_code == 200
     assert response.json()["billing_day"] == 5
+
+
+def test_update_billing_day_error(client: TestClient, db):
+
+    account = Account(
+        first_name="Example", external_id=1, email="test@example.com", tenant_id=1
+    )
+    db.add(account)
+    db.commit()
+
+    subs = Subscription(
+        billing_period=BillingPeriod.BIANNUAL,
+        account_id=1,
+        state=State.CANCELLED,
+        tenant_id=1,
+    )
+
+    db.add(subs)
+    db.commit()
+
+    response1 = client.put(
+        "/v1/subscriptions/999/billing_day",
+        json={"billing_day": 5},
+        headers=AUTH_HEADERS,
+    )
+    response2 = client.put(
+        "/v1/subscriptions/1/billing_day", json={"billing_day": 5}, headers=AUTH_HEADERS
+    )
+
+    assert response1.status_code == 404
+    assert response2.status_code == 400
 
 
 def test_pause_subscriptions(client: TestClient, db):
@@ -355,3 +462,28 @@ def test_pause_subscriptions(client: TestClient, db):
 
     assert response.status_code == 200
     assert response.json()["state"] == State.PAUSED
+
+
+def test_pause_subscriptions_error(client: TestClient, db):
+
+    account = Account(
+        first_name="Example", external_id=1, email="test@example.com", tenant_id=1
+    )
+    db.add(account)
+    db.commit()
+
+    subs = Subscription(
+        billing_period=BillingPeriod.BIANNUAL,
+        account_id=1,
+        state=State.CANCELLED,
+        tenant_id=1,
+    )
+
+    db.add(subs)
+    db.commit()
+
+    response1 = client.put("/v1/subscriptions/999/pause", headers=AUTH_HEADERS)
+    response2 = client.put("/v1/subscriptions/1/pause", headers=AUTH_HEADERS)
+
+    assert response1.status_code == 404
+    assert response2.status_code == 400

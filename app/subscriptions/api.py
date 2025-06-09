@@ -1,6 +1,7 @@
 from datetime import date, datetime, timezone
 from typing import Annotated, Literal
 
+from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
@@ -8,12 +9,16 @@ from sqlmodel import select
 from app.database.deps import CurrentTenant, SessionDep
 from app.database.models import (
     Account,
+    PhaseType,
     State,
     Subscription,
     SubscriptionCreate,
+    SubscriptionPhase,
     SubscriptionProduct,
     SubscriptionResponse,
     SubscriptionWithAccountAndCustomFields,
+    TrialTimeUnit,
+    UpdateBillingDay,
 )
 from app.exceptions import BadRequestError, NotFoundError
 from app.responses import responses
@@ -32,11 +37,12 @@ async def create_subscription(
             detail="A product cannot be repeated in the same subscription"
         )
 
-    if (subscription.trial_time_unit and not subscription.trial_time) or (
-        subscription.trial_time and not subscription.trial_time_unit
+    if (
+        subscription.trial_time_unit not in (TrialTimeUnit.UNLIMITED, None)
+        and not subscription.trial_time
     ):
         raise BadRequestError(
-            detail="Both trial_time and trial_time_unit are required if one is provided"
+            detail="trial_time is required if trial_time_unit is provided"
         )
 
     if not session.get(Account, subscription.account_id):
@@ -46,6 +52,7 @@ async def create_subscription(
         SubscriptionProduct(
             product_id=product.product_id,
             quantity=product.quantity,
+            tenant_id=current_tenant.id,
         )
         for product in subscription.products
     ]
@@ -58,11 +65,75 @@ async def create_subscription(
     session.add(subscription_db)
     subscription_db.products = products
 
+    phases = []
+
+    if subscription.trial_time_unit == TrialTimeUnit.UNLIMITED:
+
+        initial_phase = SubscriptionPhase(
+            phase=PhaseType.TRIAL,
+            tenant_id=current_tenant.id,
+            start_date=subscription_db.start_date,
+        )
+        phases.append(initial_phase)
+
+    if not subscription.trial_time_unit:
+
+        initial_phase = SubscriptionPhase(
+            phase=PhaseType.PAID,
+            tenant_id=current_tenant.id,
+            start_date=subscription_db.start_date,
+        )
+        phases.append(initial_phase)
+
+    if subscription.trial_time_unit in (
+        TrialTimeUnit.DAYS,
+        TrialTimeUnit.WEEKS,
+        TrialTimeUnit.MONTHS,
+        TrialTimeUnit.YEARS,
+    ):
+
+        trial_time_unit_mapping = {
+            TrialTimeUnit.DAYS: "days",
+            TrialTimeUnit.WEEKS: "weeks",
+            TrialTimeUnit.MONTHS: "months",
+            TrialTimeUnit.YEARS: "years",
+        }
+
+        trial_time_unit = trial_time_unit_mapping.get(
+            subscription.trial_time_unit, None
+        )
+
+        end_date_initial_phase = subscription_db.start_date + relativedelta(
+            **{trial_time_unit: subscription_db.trial_time}
+        )
+
+        initial_phase = SubscriptionPhase(
+            phase=PhaseType.TRIAL,
+            tenant_id=current_tenant.id,
+            start_date=subscription_db.start_date,
+            end_date=end_date_initial_phase,
+        )
+
+        start_date_final_phase = end_date_initial_phase + relativedelta(days=1)
+
+        final_phase = SubscriptionPhase(
+            phase=PhaseType.PAID,
+            tenant_id=current_tenant.id,
+            start_date=start_date_final_phase,
+        )
+
+        subscription_db.billing_day = start_date_final_phase.day
+
+        phases = [initial_phase, final_phase]
+
+    subscription_db.phases = phases
+
     try:
         session.commit()
         session.refresh(subscription_db)
         return subscription_db
     except IntegrityError as exc:
+        session.rollback()
         raise BadRequestError(detail="External id already exists") from exc
 
 
@@ -165,7 +236,7 @@ def cancel_subscription(
 @router.put("/{subscription_id}/billing_day")
 def update_billing_day(
     subscription_id: int,
-    day: Annotated[int, Query(ge=0, le=31)],
+    data: UpdateBillingDay,
     session: SessionDep,
     current_tenant: CurrentTenant,
 ) -> SubscriptionWithAccountAndCustomFields:
@@ -182,7 +253,7 @@ def update_billing_day(
     if subscription.state == State.CANCELLED:
         raise BadRequestError(detail="The subscription is cancelled")
 
-    subscription.billing_day = day
+    subscription.billing_day = data.billing_day
 
     session.commit()
     session.refresh(subscription)

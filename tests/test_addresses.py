@@ -68,6 +68,25 @@ def test_create_address(client: TestClient, db):
         assert response_json[key] == value
 
 
+def test_create_address_error(client: TestClient):
+
+    data = {
+        "street_number1": "street number 1",
+        "street_number2": "street number 2",
+        "city": "city",
+        "postal_code": "postal code",
+        "state": "state",
+        "province": "province",
+        "country": "country",
+        "country_id": 1,
+        "account_id": 1,
+    }
+
+    response = client.post("/v1/addresses", json=data, headers=AUTH_HEADERS)
+
+    assert response.status_code == 400
+
+
 def test_read_addresses(client: TestClient, db):
 
     address1 = Address(
@@ -102,6 +121,13 @@ def test_retrieve_address(client: TestClient, db):
     assert response_json["street_number2"] == address.street_number2
 
 
+def test_retrieve_address_error(client: TestClient, db):
+
+    response = client.get("/v1/addresses/999", headers=AUTH_HEADERS)
+
+    assert response.status_code == 404
+
+
 def test_update_address(client: TestClient, db):
 
     address = Address(street_number1="street 1", street_number2="street 2", tenant_id=1)
@@ -127,6 +153,24 @@ def test_update_address(client: TestClient, db):
 
     for key, value in data.items():
         assert response_json[key] == value
+
+
+def test_update_address_error(client: TestClient):
+
+    data = {
+        "street_number1": "street number 1.1",
+        "street_number2": "street number 2.1",
+        "city": "city 2",
+        "postal_code": "postal code 2",
+        "state": "state 2",
+        "province": "province 2",
+        "country": "country 2",
+        "country_id": 2,
+    }
+
+    response = client.put("/v1/addresses/1", json=data, headers=AUTH_HEADERS)
+
+    assert response.status_code == 404
 
 
 def test_delete_address(client: TestClient, db):

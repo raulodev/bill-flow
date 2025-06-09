@@ -32,7 +32,7 @@ class User(UserBase, table=True):
 
 class TenantBase(SQLModel):
     name: str = Field(max_length=50, index=True)
-    api_key: str = Field(max_length=255)
+    api_key: str = Field(max_length=255, unique=True)
     api_secret: str = Field(min_length=8, max_length=255)
     external_id: str | None = Field(default=None, unique=True, index=True)
 
@@ -44,6 +44,13 @@ class Tenant(TenantBase, table=True):
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+
+class TenantUpdate(SQLModel):
+    name: str | None = None
+    api_key: str | None = None
+    api_secret: str | None = None
+    external_id: str | None = None
 
 
 class TenantResponse(SQLModel):
@@ -263,15 +270,15 @@ class SubscriptionProduct(SubscriptionProductBase, table=True):
 
     __tablename__ = "subscription_product"
 
-    product_id: int = Field(
-        primary_key=True, foreign_key="product.id", ondelete="CASCADE"
-    )
     subscription_id: int = Field(
         primary_key=True, foreign_key="subscription.id", ondelete="CASCADE"
     )
-
     subscription: "Subscription" = Relationship(back_populates="products")
+    product_id: int = Field(
+        primary_key=True, foreign_key="product.id", ondelete="CASCADE"
+    )
     product: "Product" = Relationship(back_populates="subscriptions")
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
@@ -296,6 +303,7 @@ class Subscription(SubscriptionBase, table=True):
     custom_fields: List["CustomField"] = Relationship(
         back_populates="subscription", cascade_delete=True
     )
+    phases: List["SubscriptionPhase"] = Relationship(back_populates="subscription")
     start_date: date = Field(default=datetime.now(timezone.utc), nullable=False)
     resume_date: date | None = Field(default=None)
     state: State = Field(default=State.ACTIVE)
@@ -311,6 +319,10 @@ class SubscriptionCreate(SubscriptionBase):
     products: List[SubscriptionProductBase]
 
 
+class UpdateBillingDay(SQLModel):
+    billing_day: int = Field(ge=0, le=31)
+
+
 class SubscriptionResponse(SubscriptionBase):
     id: int
     state: State
@@ -324,3 +336,25 @@ class SubscriptionResponse(SubscriptionBase):
 class SubscriptionWithAccountAndCustomFields(SubscriptionResponse):
     account: Account
     custom_fields: List["CustomField"]
+
+
+class PhaseType(str, Enum):
+    TRIAL = "TRIAL"
+    PAID = "PAID"
+
+
+class SubscriptionPhase(SQLModel, table=True):
+
+    __tablename__ = "subscription_phase"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    subscription_id: int = Field(foreign_key="subscription.id", ondelete="CASCADE")
+    subscription: Subscription = Relationship(back_populates="phases")
+    phase: PhaseType = Field()
+    start_date: date = Field(nullable=False)
+    end_date: date | None = Field(default=None)
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
+    updated: date = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
