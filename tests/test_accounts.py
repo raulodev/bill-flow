@@ -194,6 +194,13 @@ def test_retrieve_account(client: TestClient, db):
     assert response_json["credit"] == "0.000"
 
 
+def test_retrieve_account_error(client: TestClient):
+
+    response = client.get("/v1/accounts/999", headers=AUTH_HEADERS)
+
+    assert response.status_code == 404
+
+
 def test_update_account(client: TestClient, db):
 
     account1 = Account(
@@ -256,11 +263,17 @@ def test_update_account_error(client: TestClient, db):
         "/v1/accounts/1", json=data_diplicate_email, headers=AUTH_HEADERS
     )
 
+    response3 = client.put(
+        "/v1/accounts/999", json=data_diplicate_email, headers=AUTH_HEADERS
+    )
+
     assert response1.status_code == 400
     assert response1.json()["detail"] == "External id already exists"
 
     assert response2.status_code == 400
     assert response2.json()["detail"] == "Email already exists"
+
+    assert response3.status_code == 404
 
 
 def test_delete_account(client: TestClient, db):
