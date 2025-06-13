@@ -65,11 +65,11 @@ def log_operation(
     level: Literal["info", "warning", "error"] = "info",
 ):
     """Records a log operation in the application log."""
-    user_part = f" by user {user_id}" if user_id else ""
+
+    user_part = f"for user {user_id}" if user_id else ""
+    tenant_part = f"for tenant {tenant_id}" if tenant_id else ""
     detail_part = f": {detail}" if detail else ""
-    message = (
-        f"{operation} {model} for tenant {tenant_id}{user_part} {status}{detail_part}"
-    )
+    message = f"{operation} {model} {tenant_part} {user_part} {status}{detail_part}"
 
     match level:
         case "info":
