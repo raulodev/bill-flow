@@ -7,6 +7,7 @@ from sqlmodel import select
 from app.database.deps import CurrentTenant, SessionDep
 from app.database.models import Product, ProductBase, ProductWithCustomFields
 from app.exceptions import BadRequestError, NotFoundError
+from app.logging import log_operation
 from app.responses import responses
 
 router = APIRouter(prefix="/products", responses=responses)
@@ -16,6 +17,15 @@ router = APIRouter(prefix="/products", responses=responses)
 async def create_product(
     product: ProductBase, session: SessionDep, current_tenant: CurrentTenant
 ) -> Product:
+
+    log_operation(
+        "CREATE",
+        "Product",
+        current_tenant.id,
+        "PENDING",
+        detail=product.model_dump(),
+    )
+
     product_db = Product.model_validate(
         product, update={"tenant_id": current_tenant.id}
     )
@@ -24,9 +34,28 @@ async def create_product(
         session.add(product_db)
         session.commit()
         session.refresh(product_db)
+
+        log_operation(
+            operation="CREATE",
+            model="Product",
+            tenant_id=current_tenant.id,
+            status="SUCCESS",
+            detail=product_db.model_dump(),
+        )
+
         return product_db
     except IntegrityError as exc:
         session.rollback()
+
+        log_operation(
+            operation="CREATE",
+            model="Product",
+            tenant_id=current_tenant.id,
+            status="FAILED",
+            detail="External id already exists",
+            level="warning",
+        )
+
         raise BadRequestError(detail="External id already exists") from exc
 
 
@@ -40,6 +69,14 @@ def read_products(
         "ALL", "AVAILABLE", "NO_AVAILABLE"
     ] = "ALL",
 ) -> list[Product]:
+
+    log_operation(
+        "READ",
+        "Product",
+        current_tenant.id,
+        "PENDING",
+        detail=f"offset : {offset} limit: {limit} status: {status}",
+    )
 
     query = (
         select(Product)
@@ -67,6 +104,15 @@ def read_products(
         )
 
     products = session.exec(query).all()
+
+    log_operation(
+        "READ",
+        "Product",
+        current_tenant.id,
+        "SUCCESS",
+        detail=products,
+    )
+
     return products
 
 
@@ -76,13 +122,42 @@ def read_product(
     session: SessionDep,
     current_tenant: CurrentTenant,
 ) -> ProductWithCustomFields:
+
+    log_operation(
+        "READ",
+        "Product",
+        current_tenant.id,
+        "PENDING",
+        detail=f"product id {product_id}",
+    )
+
     product = session.exec(
         select(Product).where(
             Product.id == product_id, Product.tenant_id == current_tenant.id
         )
     ).first()
+
     if not product:
+
+        log_operation(
+            "READ",
+            "Product",
+            current_tenant.id,
+            "FAILED",
+            detail=f"product id {product_id} not found",
+            level="warning",
+        )
+
         raise NotFoundError()
+
+    log_operation(
+        "READ",
+        "Product",
+        current_tenant.id,
+        "SUCCESS",
+        detail=product.model_dump(),
+    )
+
     return product
 
 
@@ -93,6 +168,14 @@ def delete_product(
     current_tenant: CurrentTenant,
 ):
 
+    log_operation(
+        operation="DELETE",
+        model="Product",
+        tenant_id=current_tenant.id,
+        status="PENDING",
+        detail=f"product id {product_id}",
+    )
+
     product = session.exec(
         select(Product).where(
             Product.id == product_id,
@@ -100,11 +183,31 @@ def delete_product(
             Product.is_available == True,
         )
     ).first()
+
     if not product:
-        raise NotFoundError()
+
+        log_operation(
+            "DELETE",
+            "Product",
+            current_tenant.id,
+            "FAILED",
+            detail=f"product id {product_id} is not available",
+            level="warning",
+        )
+
+        raise NotFoundError(detail="Product is not available")
 
     product.is_available = False
     session.commit()
+
+    log_operation(
+        operation="DELETE",
+        model="Product",
+        tenant_id=current_tenant.id,
+        status="SUCCESS",
+        detail=f"product id {product_id} is now unavailable",
+    )
+
     return ""
 
 
@@ -115,13 +218,34 @@ def update_product(
     session: SessionDep,
     current_tenant: CurrentTenant,
 ) -> Product:
+
+    log_operation(
+        operation="UPDATE",
+        model="Product",
+        tenant_id=current_tenant.id,
+        status="PENDING",
+        detail=f"product id {product_id} data {custom_field.model_dump()}",
+    )
+
     product_db = session.exec(
         select(Product).where(
             Product.id == product_id, Product.tenant_id == current_tenant.id
         )
     ).first()
+
     if not product_db:
+
+        log_operation(
+            operation="UPDATE",
+            model="Product",
+            tenant_id=current_tenant.id,
+            status="FAILED",
+            detail=f"product id {product_id} not found",
+            level="warning",
+        )
+
         raise NotFoundError()
+
     product_data = custom_field.model_dump(exclude_unset=True)
     product_db.sqlmodel_update(product_data)
 
@@ -129,7 +253,27 @@ def update_product(
         session.add(product_db)
         session.commit()
         session.refresh(product_db)
+
+        log_operation(
+            operation="UPDATE",
+            model="Product",
+            tenant_id=current_tenant.id,
+            status="SUCCESS",
+            detail=f"product id {product_id} data {product_db.model_dump()}",
+        )
+
         return product_db
+
     except IntegrityError as exc:
         session.rollback()
+
+        log_operation(
+            operation="CREATE",
+            model="Product",
+            tenant_id=current_tenant.id,
+            status="FAILED",
+            detail="External id already exists",
+            level="warning",
+        )
+
         raise BadRequestError(detail="External id already exists") from exc
