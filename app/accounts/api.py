@@ -227,7 +227,7 @@ def update_address(
             model="Account",
             tenant_id=current_tenant.id,
             status="FAILED",
-            detail=f"account id {account_id} data {account.model_dump()}",
+            detail=f"account id {account_id} not found",
             level="warning",
         )
 
