@@ -33,10 +33,10 @@ async def create_subscription(
 ) -> SubscriptionResponse:
 
     log_operation(
-        "CREATE",
-        "Subscription",
-        current_tenant.id,
-        "PENDING",
+        operation="CREATE",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=subscription.model_dump(),
     )
 
@@ -45,10 +45,10 @@ async def create_subscription(
     if len(product_ids) != len(set(product_ids)):
 
         log_operation(
-            "CREATE",
-            "Subscription",
-            current_tenant.id,
-            "FAILED",
+            operation="CREATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail="A product cannot be repeated in the same subscription",
         )
 
@@ -62,10 +62,10 @@ async def create_subscription(
     ):
 
         log_operation(
-            "CREATE",
-            "Subscription",
-            current_tenant.id,
-            "FAILED",
+            operation="CREATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail="trial_time is required if trial_time_unit is provided",
         )
 
@@ -76,10 +76,10 @@ async def create_subscription(
     if not session.get(Account, subscription.account_id):
 
         log_operation(
-            "CREATE",
-            "Subscription",
-            current_tenant.id,
-            "FAILED",
+            operation="CREATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"account id {subscription.account_id} not found",
         )
 
@@ -168,8 +168,8 @@ async def create_subscription(
     log_operation(
         operation="CREATE",
         model="Subscription",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"phases: {phases}",
     )
 
@@ -180,8 +180,8 @@ async def create_subscription(
         log_operation(
             operation="CREATE",
             model="Subscription",
-            tenant_id=current_tenant.id,
             status="SUCCESS",
+            tenant_id=current_tenant.id,
             detail=subscription_db.model_dump(),
         )
 
@@ -192,8 +192,8 @@ async def create_subscription(
         log_operation(
             operation="CREATE",
             model="Subscription",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail="External id already exists",
             level="warning",
         )
@@ -213,10 +213,10 @@ def read_subscriptions(
 ) -> list[SubscriptionResponse]:
 
     log_operation(
-        "READ",
-        "Subscription",
-        current_tenant.id,
-        "PENDING",
+        operation="READ",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"offset : {offset} limit: {limit} state: {state}",
     )
 
@@ -236,10 +236,10 @@ def read_subscriptions(
     subscriptions = session.exec(query).all()
 
     log_operation(
-        "READ",
-        "Subscription",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="Subscription",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=subscriptions,
     )
 
@@ -254,10 +254,10 @@ def read_subscription(
 ) -> SubscriptionWithAccountAndCustomFields:
 
     log_operation(
-        "READ",
-        "Subscription",
-        current_tenant.id,
-        "PENDING",
+        operation="READ",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"subscription id {subscription_id}",
     )
 
@@ -271,10 +271,10 @@ def read_subscription(
     if not subscription:
 
         log_operation(
-            "READ",
-            "Subscription",
-            current_tenant.id,
-            "FAILED",
+            operation="READ",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"subscription id {subscription_id} not found",
             level="warning",
         )
@@ -282,10 +282,10 @@ def read_subscription(
         raise NotFoundError()
 
     log_operation(
-        "READ",
-        "Subscription",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="Subscription",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=subscription.model_dump(),
     )
 
@@ -300,10 +300,10 @@ def read_subscription_by_external_id(
 ) -> SubscriptionWithAccountAndCustomFields:
 
     log_operation(
-        "READ",
-        "Subscription",
-        current_tenant.id,
-        "PENDING",
+        operation="READ",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"subscription external id {external_id}",
     )
 
@@ -317,10 +317,10 @@ def read_subscription_by_external_id(
     if not subscription:
 
         log_operation(
-            "READ",
-            "Subscription",
-            current_tenant.id,
-            "FAILED",
+            operation="READ",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"subscription with exyernal id {external_id} not found",
             level="warning",
         )
@@ -328,10 +328,10 @@ def read_subscription_by_external_id(
         raise NotFoundError()
 
     log_operation(
-        "READ",
-        "Subscription",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="Subscription",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=subscription.model_dump(),
     )
 
@@ -349,8 +349,8 @@ def cancel_subscription(
     log_operation(
         operation="DELETE",
         model="Subscription",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"subscription id {subscription_id}",
     )
 
@@ -366,8 +366,8 @@ def cancel_subscription(
         log_operation(
             operation="DELETE",
             model="Subscription",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"subscription id {subscription_id} not found",
             level="warning",
         )
@@ -379,8 +379,8 @@ def cancel_subscription(
         log_operation(
             operation="DELETE",
             model="Subscription",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail="The subscription is cancelled",
             level="warning",
         )
@@ -401,8 +401,8 @@ def cancel_subscription(
     log_operation(
         operation="DELETE",
         model="Subscription",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=f"subscription id {subscription_id}",
     )
 
@@ -420,8 +420,8 @@ def update_billing_day(
     log_operation(
         operation="UPDATE",
         model="Subscription",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"subscription id {subscription_id} data {data.model_dump()}",
     )
 
@@ -437,8 +437,8 @@ def update_billing_day(
         log_operation(
             operation="UPDATE",
             model="Subscription",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"subscription id {subscription_id} not found",
             level="warning",
         )
@@ -450,8 +450,8 @@ def update_billing_day(
         log_operation(
             operation="UPDATE",
             model="Subscription",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail="The subscription is cancelled",
             level="warning",
         )
@@ -466,8 +466,8 @@ def update_billing_day(
     log_operation(
         operation="UPDATE",
         model="Subscription",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=subscription.model_dump(),
     )
 
@@ -485,8 +485,8 @@ def pause_subscription(
     log_operation(
         operation="UPDATE",
         model="Subscription",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"subscription id {subscription_id} resume date {resume}",
     )
 
@@ -502,8 +502,8 @@ def pause_subscription(
         log_operation(
             operation="UPDATE",
             model="Subscription",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"subscription id {subscription_id} not found",
             level="warning",
         )
@@ -515,8 +515,8 @@ def pause_subscription(
         log_operation(
             operation="UPDATE",
             model="Subscription",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail="The subscription is cancelled",
             level="warning",
         )
@@ -538,8 +538,8 @@ def pause_subscription(
     log_operation(
         operation="UPDATE",
         model="Subscription",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=subscription.model_dump(),
     )
 

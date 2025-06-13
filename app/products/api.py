@@ -19,10 +19,10 @@ async def create_product(
 ) -> Product:
 
     log_operation(
-        "CREATE",
-        "Product",
-        current_tenant.id,
-        "PENDING",
+        operation="CREATE",
+        model="Product",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=product.model_dump(),
     )
 
@@ -38,8 +38,8 @@ async def create_product(
         log_operation(
             operation="CREATE",
             model="Product",
-            tenant_id=current_tenant.id,
             status="SUCCESS",
+            tenant_id=current_tenant.id,
             detail=product_db.model_dump(),
         )
 
@@ -50,8 +50,8 @@ async def create_product(
         log_operation(
             operation="CREATE",
             model="Product",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail="External id already exists",
             level="warning",
         )
@@ -71,10 +71,10 @@ def read_products(
 ) -> list[Product]:
 
     log_operation(
-        "READ",
-        "Product",
-        current_tenant.id,
-        "PENDING",
+        operation="READ",
+        model="Product",
+        tenant_id=current_tenant.id,
+        status="PENDING",
         detail=f"offset : {offset} limit: {limit} status: {status}",
     )
 
@@ -106,10 +106,10 @@ def read_products(
     products = session.exec(query).all()
 
     log_operation(
-        "READ",
-        "Product",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="Product",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=products,
     )
 
@@ -124,10 +124,10 @@ def read_product(
 ) -> ProductWithCustomFields:
 
     log_operation(
-        "READ",
-        "Product",
-        current_tenant.id,
-        "PENDING",
+        operation="READ",
+        model="Product",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"product id {product_id}",
     )
 
@@ -140,10 +140,10 @@ def read_product(
     if not product:
 
         log_operation(
-            "READ",
-            "Product",
-            current_tenant.id,
-            "FAILED",
+            operation="READ",
+            model="Product",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"product id {product_id} not found",
             level="warning",
         )
@@ -151,10 +151,10 @@ def read_product(
         raise NotFoundError()
 
     log_operation(
-        "READ",
-        "Product",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="Product",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=product.model_dump(),
     )
 
@@ -171,8 +171,8 @@ def delete_product(
     log_operation(
         operation="DELETE",
         model="Product",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"product id {product_id}",
     )
 
@@ -187,10 +187,10 @@ def delete_product(
     if not product:
 
         log_operation(
-            "DELETE",
-            "Product",
-            current_tenant.id,
-            "FAILED",
+            operation="DELETE",
+            model="Product",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"product id {product_id} is not available",
             level="warning",
         )
@@ -203,8 +203,8 @@ def delete_product(
     log_operation(
         operation="DELETE",
         model="Product",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=f"product id {product_id} is now unavailable",
     )
 
@@ -222,8 +222,8 @@ def update_product(
     log_operation(
         operation="UPDATE",
         model="Product",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"product id {product_id} data {custom_field.model_dump()}",
     )
 
@@ -238,8 +238,8 @@ def update_product(
         log_operation(
             operation="UPDATE",
             model="Product",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"product id {product_id} not found",
             level="warning",
         )
@@ -257,8 +257,8 @@ def update_product(
         log_operation(
             operation="UPDATE",
             model="Product",
-            tenant_id=current_tenant.id,
             status="SUCCESS",
+            tenant_id=current_tenant.id,
             detail=f"product id {product_id} data {product_db.model_dump()}",
         )
 
@@ -270,8 +270,8 @@ def update_product(
         log_operation(
             operation="CREATE",
             model="Product",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail="External id already exists",
             level="warning",
         )

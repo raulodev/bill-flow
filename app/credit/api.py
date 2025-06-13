@@ -16,10 +16,10 @@ async def add_credit(
 ) -> CreditHistory:
 
     log_operation(
-        "CREATE",
-        "Credit",
-        current_tenant.id,
-        "PENDING",
+        operation="CREATE",
+        model="Credit",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=credit.model_dump(),
     )
 
@@ -34,8 +34,8 @@ async def add_credit(
         log_operation(
             operation="CREATE",
             model="Credit",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"account id {credit.account_id} not found",
             level="warning",
         )
@@ -54,8 +54,8 @@ async def add_credit(
     log_operation(
         operation="CREATE",
         model="Credit",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
     )
 
     return credit_history_db
@@ -67,10 +67,10 @@ async def delete_credit(
 ) -> CreditHistory:
 
     log_operation(
-        "DELETE",
-        "Credit",
-        current_tenant.id,
-        "PENDING",
+        operation="DELETE",
+        model="Credit",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=credit.model_dump(),
     )
 
@@ -85,8 +85,8 @@ async def delete_credit(
         log_operation(
             operation="DELETE",
             model="Credit",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"account id {credit.account_id} not found",
             level="warning",
         )
@@ -106,8 +106,8 @@ async def delete_credit(
     log_operation(
         operation="DELETE",
         model="Credit",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
     )
 
     return credit_history_db

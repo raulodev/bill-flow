@@ -25,10 +25,10 @@ async def create_custom_field(
 ) -> CustomField:
 
     log_operation(
-        "CREATE",
-        "CustomField",
-        current_tenant.id,
-        "PENDING",
+        operation="CREATE",
+        model="CustomField",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=custom_field.model_dump(),
     )
 
@@ -46,8 +46,8 @@ async def create_custom_field(
             log_operation(
                 operation="CREATE",
                 model="CustomField",
-                tenant_id=current_tenant.id,
                 status="FAILED",
+                tenant_id=current_tenant.id,
                 detail=f"account id {custom_field.account_id} not found",
                 level="warning",
             )
@@ -68,8 +68,8 @@ async def create_custom_field(
             log_operation(
                 operation="CREATE",
                 model="CustomField",
-                tenant_id=current_tenant.id,
                 status="FAILED",
+                tenant_id=current_tenant.id,
                 detail=f"product id {custom_field.product_id} not found",
                 level="warning",
             )
@@ -90,8 +90,8 @@ async def create_custom_field(
             log_operation(
                 operation="CREATE",
                 model="CustomField",
-                tenant_id=current_tenant.id,
                 status="FAILED",
+                tenant_id=current_tenant.id,
                 detail=f"subscription id {custom_field.subscription_id} not found",
                 level="warning",
             )
@@ -108,8 +108,8 @@ async def create_custom_field(
     log_operation(
         operation="CREATE",
         model="CustomField",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=custom_field_db.model_dump(),
     )
 
@@ -125,10 +125,10 @@ def read_custom_fields(
 ) -> list[CustomField]:
 
     log_operation(
-        "READ",
-        "CustomField",
-        current_tenant.id,
-        "PENDING",
+        operation="READ",
+        model="CustomField",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"offset : {offset} limit: {limit}",
     )
 
@@ -140,10 +140,10 @@ def read_custom_fields(
     ).all()
 
     log_operation(
-        "READ",
-        "CustomField",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="CustomField",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=custom_fields,
     )
 
@@ -158,10 +158,10 @@ def read_custom_field(
 ) -> CustomFieldWithAccountAndProduct:
 
     log_operation(
-        "READ",
-        "CustomField",
-        current_tenant.id,
-        "PENDING",
+        operation="READ",
+        model="CustomField",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"custom field id {custom_field_id}",
     )
 
@@ -175,10 +175,10 @@ def read_custom_field(
     if not custom_field:
 
         log_operation(
-            "READ",
-            "CustomField",
-            current_tenant.id,
-            "FAILED",
+            operation="READ",
+            model="CustomField",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"custom field id {custom_field_id} not found",
             level="warning",
         )
@@ -186,10 +186,10 @@ def read_custom_field(
         raise NotFoundError()
 
     log_operation(
-        "READ",
-        "CustomField",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="CustomField",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=custom_field.model_dump(),
     )
 
@@ -206,8 +206,8 @@ def delete_custom_field(
     log_operation(
         operation="DELETE",
         model="CustomField",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"custom field id {custom_field_id}",
     )
 
@@ -221,10 +221,10 @@ def delete_custom_field(
     if not custom_field:
 
         log_operation(
-            "DELETE",
-            "CustomField",
-            current_tenant.id,
-            "FAILED",
+            operation="DELETE",
+            model="CustomField",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"custom field id {custom_field_id} not found",
             level="warning",
         )
@@ -237,8 +237,8 @@ def delete_custom_field(
     log_operation(
         operation="DELETE",
         model="CustomField",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=f"custom field id {custom_field_id}",
     )
 
@@ -256,8 +256,8 @@ def update_custom_field(
     log_operation(
         operation="UPDATE",
         model="CustomField",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"custom field id {custom_field_id} data {custom_field.model_dump()}",
     )
 
@@ -273,8 +273,8 @@ def update_custom_field(
         log_operation(
             operation="UPDATE",
             model="CustomField",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"custom field id {custom_field_id} not found",
             level="warning",
         )
@@ -290,8 +290,8 @@ def update_custom_field(
     log_operation(
         operation="UPDATE",
         model="CustomField",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=f"custom field id {custom_field_id} data {custom_field_db.model_dump()}",
     )
 

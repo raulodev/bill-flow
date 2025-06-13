@@ -18,10 +18,10 @@ async def create_address(
 ) -> Address:
 
     log_operation(
-        "CREATE",
-        "Address",
-        current_tenant.id,
-        "PENDING",
+        operation="CREATE",
+        model="Address",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=address.model_dump(),
     )
 
@@ -30,8 +30,8 @@ async def create_address(
         log_operation(
             operation="CREATE",
             model="Address",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"account id {address.account_id} not found",
             level="warning",
         )
@@ -48,8 +48,8 @@ async def create_address(
     log_operation(
         operation="CREATE",
         model="Address",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=address_db.model_dump(),
     )
 
@@ -65,10 +65,10 @@ def read_addresses(
 ) -> list[Address]:
 
     log_operation(
-        "READ",
-        "Address",
-        current_tenant.id,
-        "PENDING",
+        operation="READ",
+        model="Address",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"offset : {offset} limit: {limit}",
     )
 
@@ -80,10 +80,10 @@ def read_addresses(
     ).all()
 
     log_operation(
-        "READ",
-        "Address",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="Address",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=addresses,
     )
 
@@ -98,10 +98,10 @@ def read_address(
 ) -> AddressWithAccount:
 
     log_operation(
-        "READ",
-        "Address",
-        current_tenant.id,
-        "PENDING",
+        operation="READ",
+        model="Address",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"address id {address_id}",
     )
 
@@ -114,10 +114,10 @@ def read_address(
     if not address:
 
         log_operation(
-            "READ",
-            "Address",
-            current_tenant.id,
-            "FAILED",
+            operation="READ",
+            model="Address",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"address id {address_id} not found",
             level="warning",
         )
@@ -125,10 +125,10 @@ def read_address(
         raise NotFoundError()
 
     log_operation(
-        "READ",
-        "Address",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="Address",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=address.model_dump(),
     )
 
@@ -145,8 +145,8 @@ def delete_address(
     log_operation(
         operation="DELETE",
         model="Address",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"address id {address_id}",
     )
 
@@ -159,10 +159,10 @@ def delete_address(
     if not address:
 
         log_operation(
-            "DELETE",
-            "Address",
-            current_tenant.id,
-            "FAILED",
+            operation="DELETE",
+            model="Address",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"address id {address_id} not found",
             level="warning",
         )
@@ -175,8 +175,8 @@ def delete_address(
     log_operation(
         operation="DELETE",
         model="Address",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=f"address id {address_id}",
     )
 
@@ -194,8 +194,8 @@ def update_address(
     log_operation(
         operation="UPDATE",
         model="Address",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"address id {address_id} data {address.model_dump()}",
     )
 
@@ -210,8 +210,8 @@ def update_address(
         log_operation(
             operation="UPDATE",
             model="Address",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"address id {address_id} not found",
             level="warning",
         )
@@ -227,8 +227,8 @@ def update_address(
     log_operation(
         operation="UPDATE",
         model="Address",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=f"account id {address_id} data {address_db.model_dump()}",
     )
 
