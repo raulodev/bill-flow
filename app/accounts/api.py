@@ -41,7 +41,6 @@ async def create_account(
             tenant_id=current_tenant.id,
             status="SUCCESS",
             detail=account_db.model_dump(),
-            level="info",
         )
         return account_db
     except IntegrityError as exc:
@@ -165,7 +164,6 @@ def delete_account(
         tenant_id=current_tenant.id,
         status="PENDING",
         detail=f"account id {account_id}",
-        level="info",
     )
 
     account = session.exec(
@@ -195,7 +193,6 @@ def delete_account(
         tenant_id=current_tenant.id,
         status="SUCCESS",
         detail=f"account id {account_id}",
-        level="info",
     )
 
     return ""
@@ -215,7 +212,6 @@ def update_address(
         tenant_id=current_tenant.id,
         status="PENDING",
         detail=f"account id {account_id} data {account.model_dump()}",
-        level="info",
     )
 
     account_db = session.exec(
@@ -251,7 +247,6 @@ def update_address(
             tenant_id=current_tenant.id,
             status="SUCCESS",
             detail=f"account id {account_id} data {account_db.model_dump()}",
-            level="info",
         )
 
         return account_db
