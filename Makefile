@@ -1,4 +1,3 @@
-
 help:
 	@echo "Usage: make <target>"
 	@echo "  dev            Starts the development server"

@@ -19,10 +19,10 @@ async def create_account(
 ) -> Account:
 
     log_operation(
-        "CREATE",
-        "Account",
-        current_tenant.id,
-        "PENDING",
+        operation="CREATE",
+        model="Account",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=account.model_dump(),
     )
 
@@ -38,23 +38,14 @@ async def create_account(
         log_operation(
             operation="CREATE",
             model="Account",
-            tenant_id=current_tenant.id,
             status="SUCCESS",
+            tenant_id=current_tenant.id,
             detail=account_db.model_dump(),
-            level="info",
         )
+
         return account_db
     except IntegrityError as exc:
         session.rollback()
-
-        log_operation(
-            operation="CREATE",
-            model="Account",
-            tenant_id=current_tenant.id,
-            status="FAILED",
-            detail=str(exc.orig),
-            level="warning",
-        )
 
         message = (
             "External id already exists"
@@ -65,10 +56,10 @@ async def create_account(
         log_operation(
             operation="CREATE",
             model="Account",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=message,
-            level="error",
+            level="warning",
         )
 
         raise BadRequestError(detail=message) from exc
@@ -83,11 +74,11 @@ def read_accounts(
 ) -> list[Account]:
 
     log_operation(
-        "READ",
-        "Account",
-        current_tenant.id,
-        "PENDING",
-        detail=f"offset : {offset} limit: {limit}",
+        operation="READ",
+        model="Account",
+        status="PENDING",
+        tenant_id=current_tenant.id,
+        detail=f"offset: {offset} limit: {limit}",
     )
 
     accounts = session.exec(
@@ -98,10 +89,10 @@ def read_accounts(
     ).all()
 
     log_operation(
-        "READ",
-        "Account",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="Account",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=accounts,
     )
 
@@ -116,10 +107,10 @@ def read_account(
 ) -> AccountWithCustomFieldsAndAddress:
 
     log_operation(
-        "READ",
-        "Account",
-        current_tenant.id,
-        "PENDING",
+        operation="READ",
+        model="Account",
+        status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"account id {account_id}",
     )
 
@@ -128,13 +119,14 @@ def read_account(
             Account.id == account_id, Account.tenant_id == current_tenant.id
         )
     ).first()
+
     if not account:
 
         log_operation(
-            "READ",
-            "Account",
-            current_tenant.id,
-            "FAILED",
+            operation="READ",
+            model="Account",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"account id {account_id} not found",
             level="warning",
         )
@@ -142,10 +134,10 @@ def read_account(
         raise NotFoundError()
 
     log_operation(
-        "READ",
-        "Account",
-        current_tenant.id,
-        "SUCCESS",
+        operation="READ",
+        model="Account",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=account.model_dump(),
     )
 
@@ -162,10 +154,9 @@ def delete_account(
     log_operation(
         operation="DELETE",
         model="Account",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"account id {account_id}",
-        level="info",
     )
 
     account = session.exec(
@@ -173,13 +164,14 @@ def delete_account(
             Account.id == account_id, Account.tenant_id == current_tenant.id
         )
     ).first()
+
     if not account:
 
         log_operation(
-            "DELETE",
-            "Account",
-            current_tenant.id,
-            "FAILED",
+            operation="DELETE",
+            model="Account",
+            status="FAILED",
+            tenant_id=current_tenant.id,
             detail=f"account id {account_id} not found",
             level="warning",
         )
@@ -192,10 +184,9 @@ def delete_account(
     log_operation(
         operation="DELETE",
         model="Account",
-        tenant_id=current_tenant.id,
         status="SUCCESS",
+        tenant_id=current_tenant.id,
         detail=f"account id {account_id}",
-        level="info",
     )
 
     return ""
@@ -212,10 +203,9 @@ def update_address(
     log_operation(
         operation="UPDATE",
         model="Account",
-        tenant_id=current_tenant.id,
         status="PENDING",
+        tenant_id=current_tenant.id,
         detail=f"account id {account_id} data {account.model_dump()}",
-        level="info",
     )
 
     account_db = session.exec(
@@ -229,9 +219,9 @@ def update_address(
         log_operation(
             operation="UPDATE",
             model="Account",
-            tenant_id=current_tenant.id,
             status="FAILED",
-            detail=f"account id {account_id} data {account.model_dump()}",
+            tenant_id=current_tenant.id,
+            detail=f"account id {account_id} not found",
             level="warning",
         )
 
@@ -248,24 +238,14 @@ def update_address(
         log_operation(
             operation="UPDATE",
             model="Account",
-            tenant_id=current_tenant.id,
             status="SUCCESS",
+            tenant_id=current_tenant.id,
             detail=f"account id {account_id} data {account_db.model_dump()}",
-            level="info",
         )
 
         return account_db
     except IntegrityError as exc:
         session.rollback()
-
-        log_operation(
-            operation="UPDATE",
-            model="Account",
-            tenant_id=current_tenant.id,
-            status="FAILED",
-            detail=str(exc.orig),
-            level="warning",
-        )
 
         message = (
             "External id already exists"
@@ -276,10 +256,10 @@ def update_address(
         log_operation(
             operation="UPDATE",
             model="Account",
-            tenant_id=current_tenant.id,
             status="FAILED",
+            tenant_id=current_tenant.id,
             detail=message,
-            level="error",
+            level="warning",
         )
 
         raise BadRequestError(detail=message) from exc

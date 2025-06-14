@@ -21,6 +21,7 @@ from app.database.models import (
     UpdateBillingDay,
 )
 from app.exceptions import BadRequestError, NotFoundError
+from app.logging import log_operation
 from app.responses import responses
 
 router = APIRouter(prefix="/subscriptions", responses=responses)
@@ -31,8 +32,26 @@ async def create_subscription(
     subscription: SubscriptionCreate, session: SessionDep, current_tenant: CurrentTenant
 ) -> SubscriptionResponse:
 
+    log_operation(
+        operation="CREATE",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
+        detail=subscription.model_dump(),
+    )
+
     product_ids = [product.product_id for product in subscription.products]
+
     if len(product_ids) != len(set(product_ids)):
+
+        log_operation(
+            operation="CREATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail="A product cannot be repeated in the same subscription",
+        )
+
         raise BadRequestError(
             detail="A product cannot be repeated in the same subscription"
         )
@@ -41,11 +60,29 @@ async def create_subscription(
         subscription.trial_time_unit not in (TrialTimeUnit.UNLIMITED, None)
         and not subscription.trial_time
     ):
+
+        log_operation(
+            operation="CREATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail="trial_time is required if trial_time_unit is provided",
+        )
+
         raise BadRequestError(
             detail="trial_time is required if trial_time_unit is provided"
         )
 
     if not session.get(Account, subscription.account_id):
+
+        log_operation(
+            operation="CREATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail=f"account id {subscription.account_id} not found",
+        )
+
         raise BadRequestError(detail="Account not exists")
 
     products = [
@@ -128,12 +165,39 @@ async def create_subscription(
 
     subscription_db.phases = phases
 
+    log_operation(
+        operation="CREATE",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
+        detail=f"phases: {phases}",
+    )
+
     try:
         session.commit()
         session.refresh(subscription_db)
+
+        log_operation(
+            operation="CREATE",
+            model="Subscription",
+            status="SUCCESS",
+            tenant_id=current_tenant.id,
+            detail=subscription_db.model_dump(),
+        )
+
         return subscription_db
     except IntegrityError as exc:
         session.rollback()
+
+        log_operation(
+            operation="CREATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail="External id already exists",
+            level="warning",
+        )
+
         raise BadRequestError(detail="External id already exists") from exc
 
 
@@ -147,6 +211,14 @@ def read_subscriptions(
         "ACTIVE", "CANCELLED", "PAUSED", "ALL"
     ] = "ALL",
 ) -> list[SubscriptionResponse]:
+
+    log_operation(
+        operation="READ",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
+        detail=f"offset : {offset} limit: {limit} state: {state}",
+    )
 
     query = select(Subscription).offset(offset).limit(limit)
 
@@ -163,6 +235,14 @@ def read_subscriptions(
 
     subscriptions = session.exec(query).all()
 
+    log_operation(
+        operation="READ",
+        model="Subscription",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
+        detail=subscriptions,
+    )
+
     return subscriptions
 
 
@@ -172,14 +252,43 @@ def read_subscription(
     session: SessionDep,
     current_tenant: CurrentTenant,
 ) -> SubscriptionWithAccountAndCustomFields:
+
+    log_operation(
+        operation="READ",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
+        detail=f"subscription id {subscription_id}",
+    )
+
     subscription = session.exec(
         select(Subscription).where(
             Subscription.id == subscription_id,
             Subscription.tenant_id == current_tenant.id,
         )
     ).first()
+
     if not subscription:
+
+        log_operation(
+            operation="READ",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail=f"subscription id {subscription_id} not found",
+            level="warning",
+        )
+
         raise NotFoundError()
+
+    log_operation(
+        operation="READ",
+        model="Subscription",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
+        detail=subscription.model_dump(),
+    )
+
     return subscription
 
 
@@ -189,14 +298,43 @@ def read_subscription_by_external_id(
     session: SessionDep,
     current_tenant: CurrentTenant,
 ) -> SubscriptionWithAccountAndCustomFields:
+
+    log_operation(
+        operation="READ",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
+        detail=f"subscription external id {external_id}",
+    )
+
     subscription = session.exec(
         select(Subscription).where(
             Subscription.external_id == external_id,
             Subscription.tenant_id == current_tenant.id,
         )
     ).first()
+
     if not subscription:
+
+        log_operation(
+            operation="READ",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail=f"subscription with exyernal id {external_id} not found",
+            level="warning",
+        )
+
         raise NotFoundError()
+
+    log_operation(
+        operation="READ",
+        model="Subscription",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
+        detail=subscription.model_dump(),
+    )
+
     return subscription
 
 
@@ -208,16 +346,45 @@ def cancel_subscription(
     end_date: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
 ) -> SubscriptionResponse:
 
+    log_operation(
+        operation="DELETE",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
+        detail=f"subscription id {subscription_id}",
+    )
+
     subscription = session.exec(
         select(Subscription).where(
             Subscription.id == subscription_id,
             Subscription.tenant_id == current_tenant.id,
         )
     ).first()
+
     if not subscription:
+
+        log_operation(
+            operation="DELETE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail=f"subscription id {subscription_id} not found",
+            level="warning",
+        )
+
         raise NotFoundError()
 
     if subscription.state == State.CANCELLED:
+
+        log_operation(
+            operation="DELETE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail="The subscription is cancelled",
+            level="warning",
+        )
+
         raise BadRequestError(detail="The subscription is cancelled")
 
     today = datetime.now(timezone.utc).date()
@@ -230,6 +397,15 @@ def cancel_subscription(
     subscription.end_date = end_date
     session.commit()
     session.refresh(subscription)
+
+    log_operation(
+        operation="DELETE",
+        model="Subscription",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
+        detail=f"subscription id {subscription_id}",
+    )
+
     return subscription
 
 
@@ -241,22 +417,60 @@ def update_billing_day(
     current_tenant: CurrentTenant,
 ) -> SubscriptionWithAccountAndCustomFields:
 
+    log_operation(
+        operation="UPDATE",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
+        detail=f"subscription id {subscription_id} data {data.model_dump()}",
+    )
+
     subscription = session.exec(
         select(Subscription).where(
             Subscription.id == subscription_id,
             Subscription.tenant_id == current_tenant.id,
         )
     ).first()
+
     if not subscription:
+
+        log_operation(
+            operation="UPDATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail=f"subscription id {subscription_id} not found",
+            level="warning",
+        )
+
         raise NotFoundError()
 
     if subscription.state == State.CANCELLED:
+
+        log_operation(
+            operation="UPDATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail="The subscription is cancelled",
+            level="warning",
+        )
+
         raise BadRequestError(detail="The subscription is cancelled")
 
     subscription.billing_day = data.billing_day
 
     session.commit()
     session.refresh(subscription)
+
+    log_operation(
+        operation="UPDATE",
+        model="Subscription",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
+        detail=subscription.model_dump(),
+    )
+
     return subscription
 
 
@@ -267,16 +481,46 @@ def pause_subscription(
     current_tenant: CurrentTenant,
     resume: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
 ) -> SubscriptionWithAccountAndCustomFields:
+
+    log_operation(
+        operation="UPDATE",
+        model="Subscription",
+        status="PENDING",
+        tenant_id=current_tenant.id,
+        detail=f"subscription id {subscription_id} resume date {resume}",
+    )
+
     subscription = session.exec(
         select(Subscription).where(
             Subscription.id == subscription_id,
             Subscription.tenant_id == current_tenant.id,
         )
     ).first()
+
     if not subscription:
+
+        log_operation(
+            operation="UPDATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail=f"subscription id {subscription_id} not found",
+            level="warning",
+        )
+
         raise NotFoundError()
 
     if subscription.state == State.CANCELLED:
+
+        log_operation(
+            operation="UPDATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail="The subscription is cancelled",
+            level="warning",
+        )
+
         raise BadRequestError(detail="The subscription is cancelled")
 
     today = datetime.now(timezone.utc).date()
@@ -290,4 +534,13 @@ def pause_subscription(
 
     session.commit()
     session.refresh(subscription)
+
+    log_operation(
+        operation="UPDATE",
+        model="Subscription",
+        status="SUCCESS",
+        tenant_id=current_tenant.id,
+        detail=subscription.model_dump(),
+    )
+
     return subscription
