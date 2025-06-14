@@ -3,7 +3,10 @@ import os
 import subprocess
 
 import pluggy
+from sqlmodel import Session, select
 
+from app.database.deps import engine
+from app.database.models import Plugin
 from app.logging import log_operation
 
 hookspec = pluggy.HookspecMarker("bill-flow")
@@ -52,10 +55,49 @@ def install_dependencies(dependencies: list[str], module_name: str):
         return False
 
 
-def setup_plugins():
+def register_plugin(module_name: str, setup: dict):
 
-    pm = pluggy.PluginManager("bill-flow")
-    pm.add_hookspecs(MySpec)
+    with Session(engine) as session:
+
+        plugin_db = session.exec(
+            select(Plugin).where(Plugin.module == module_name)
+        ).first()
+
+        if not plugin_db:
+            plugin_db = Plugin(
+                name=setup.get("name", module_name),
+                module=module_name,
+                specname=setup.get("specname"),
+            )
+
+            session.add(plugin_db)
+
+            log_operation(
+                operation="CREATE",
+                model="Plugin",
+                status="SUCCESS",
+                detail=f"Plugin {module_name} loaded",
+            )
+
+        else:
+            plugin_db.name = setup.get("name", module_name)
+            plugin_db.specname = setup.get("specname")
+
+            log_operation(
+                operation="UPDATE",
+                model="Plugin",
+                status="SUCCESS",
+                detail=f"Plugin {module_name} loaded",
+            )
+
+        session.commit()
+
+
+plugin_manager = pluggy.PluginManager("bill-flow")
+plugin_manager.add_hookspecs(MySpec)
+
+
+def setup_plugins():
 
     plugins_dir = os.path.dirname(__file__)
 
@@ -67,25 +109,26 @@ def setup_plugins():
             try:
                 module = importlib.import_module(module_name)
 
-                deps = getattr(module, "__dependencies__", None)
+                setup = getattr(module, "__setup__", {})
+
+                plugin_deps = setup.get("dependencies")
 
                 deps_installed = None
 
-                if isinstance(deps, list) and all(isinstance(d, str) for d in deps):
-                    deps_installed = install_dependencies(deps, module_name)
+                if (
+                    plugin_deps
+                    and isinstance(plugin_deps, list)
+                    and all(isinstance(d, str) for d in plugin_deps)
+                ):
+
+                    deps_installed = install_dependencies(plugin_deps, module_name)
 
                 if deps_installed is False:
                     continue
 
-                pm.register(module)
+                plugin_manager.register(module)
 
-                log_operation(
-                    operation="READ",
-                    model="Plugins",
-                    status="SUCCESS",
-                    detail=f"Plugin {module_name} loaded",
-                    level="info",
-                )
+                register_plugin(module_name, setup)
 
             except pluggy.PluginValidationError as e:
                 log_operation(
@@ -95,5 +138,3 @@ def setup_plugins():
                     detail=f"Error importing plugin {module_name}: {e}",
                     level="error",
                 )
-
-    return pm

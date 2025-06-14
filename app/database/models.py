@@ -358,3 +358,14 @@ class SubscriptionPhase(SQLModel, table=True):
     updated: date = Field(
         default_factory=lambda: datetime.now(timezone.utc), nullable=False
     )
+
+
+class Plugin(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    module: str = Field(unique=True)
+    specname: str | None = Field(default=None)
+    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
+    updated: date = Field(
+        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    )
