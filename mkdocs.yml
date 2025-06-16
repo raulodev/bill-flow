@@ -1,2 +1,5 @@
 site_name: Bill flow
 theme: material
+plugins:
+  - search
+  - mkdocstrings
