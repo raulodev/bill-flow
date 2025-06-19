@@ -244,7 +244,12 @@ def read_subscriptions(
         detail=f"offset : {offset} limit: {limit} state: {state}",
     )
 
-    query = select(Subscription).offset(offset).limit(limit)
+    query = (
+        select(Subscription)
+        .where(Subscription.tenant_id == current_tenant.id, Subscription.state == state)
+        .offset(offset)
+        .limit(limit)
+    )
 
     if state != "ALL":
 
