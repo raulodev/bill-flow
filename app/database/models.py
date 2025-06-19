@@ -128,11 +128,8 @@ class CreditHistory(CreditBase, CreatedUpdatedFields, table=True):
     type: CreditType = Field(default=CreditType.ADD)
 
 
-class CreditHistoryPublic(SQLModel):
-    id: int
-    account_id: int
+class CreditHistoryPublic(CreditBase):
     type: CreditType
-    account: AccountPublic
 
 
 class AddressBase(SQLModel):
