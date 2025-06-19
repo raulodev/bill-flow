@@ -300,6 +300,7 @@ class Subscription(SubscriptionBase, CreatedUpdatedFields, table=True):
     billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     charged_through_date: date | None = Field(default=None)
+    next_billing_date: date | None = Field(default=None)
     invoices: List["Invoice"] = Relationship(back_populates="subscription")
 
 
