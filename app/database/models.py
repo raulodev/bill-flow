@@ -300,6 +300,7 @@ class Subscription(SubscriptionBase, CreatedUpdatedFields, table=True):
     billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     charged_through_date: date | None = Field(default=None)
+    invoices: List["Invoice"] = Relationship(back_populates="subscription")
 
 
 class SubscriptionCreate(SubscriptionBase):
@@ -340,6 +341,26 @@ class SubscriptionPhase(CreatedUpdatedFields, table=True):
     start_date: date = Field(nullable=False)
     end_date: date | None = Field(default=None)
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+
+
+class Invoice(CreatedUpdatedFields, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    subscription_id: int = Field(foreign_key="subscription.id", ondelete="CASCADE")
+    subscription: Subscription = Relationship(back_populates="invoices")
+    start_date: date = Field(nullable=False)
+    end_date: date | None = Field(default=None)
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    items: List["InvoiceItem"] = Relationship(back_populates="invoice")
+
+
+class InvoiceItem(CreatedUpdatedFields, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    invoice_id: int = Field(foreign_key="invoice.id", ondelete="CASCADE")
+    invoice: Invoice = Relationship(back_populates="items")
+    product_id: int = Field(foreign_key="product.id", ondelete="CASCADE")
+    quantity: int = Field(default=1)
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    amount: Decimal = Field(decimal_places=3, ge=0)
 
 
 class Plugin(CreatedUpdatedFields, table=True):
