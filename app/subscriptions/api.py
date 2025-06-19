@@ -10,6 +10,7 @@ from app.database.deps import CurrentTenant, SessionDep
 from app.database.models import (
     Account,
     PhaseType,
+    Product,
     State,
     Subscription,
     SubscriptionCreate,
@@ -73,7 +74,12 @@ async def create_subscription(
             detail="trial_time is required if trial_time_unit is provided"
         )
 
-    if not session.get(Account, subscription.account_id):
+    if not session.exec(
+        select(Account).where(
+            Account.id == subscription.account_id,
+            Account.tenant_id == current_tenant.id,
+        )
+    ).first():
 
         log_operation(
             operation="CREATE",
@@ -84,6 +90,24 @@ async def create_subscription(
         )
 
         raise BadRequestError(detail="Account not exists")
+
+    for product in subscription.products:
+
+        if not session.exec(
+            select(Product).where(
+                Product.id == product.product_id,
+                Product.tenant_id == current_tenant.id,
+            )
+        ).first():
+
+            log_operation(
+                operation="CREATE",
+                model="Subscription",
+                status="FAILED",
+                tenant_id=current_tenant.id,
+                detail=f"product id {product.product_id} not found",
+            )
+            raise BadRequestError(detail="Product not exists")
 
     products = [
         SubscriptionProduct(

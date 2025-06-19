@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from app.database.models import Account, BillingPeriod, State, Subscription
+from app.database.models import Account, BillingPeriod, Product, State, Subscription
 from tests.conftest import AUTH_HEADERS, TENANT_TEST_API_KEY
 
 
@@ -49,6 +49,12 @@ def test_create_subscription(client: TestClient, db):
     db.add(account)
     db.commit()
 
+    product1 = Product(name="product 1", price=30, is_available=True, tenant_id=1)
+    product2 = Product(name="product 1", price=10, is_available=True, tenant_id=1)
+    db.add(product1)
+    db.add(product2)
+    db.commit()
+
     data = {
         "account_id": 1,
         "products": [
@@ -69,6 +75,12 @@ def test_create_subscription_with_trial_time(client: TestClient, db):
         first_name="Example", external_id=1, email="test@example.com", tenant_id=1
     )
     db.add(account)
+    db.commit()
+
+    product1 = Product(name="product 1", price=30, is_available=True, tenant_id=1)
+    product2 = Product(name="product 1", price=10, is_available=True, tenant_id=1)
+    db.add(product1)
+    db.add(product2)
     db.commit()
 
     data1 = {
@@ -149,6 +161,12 @@ def test_create_subscription_external_id_duplicate(client: TestClient, db):
         first_name="Example", external_id=1, email="test@example.com", tenant_id=1
     )
     db.add(account)
+    db.commit()
+
+    product1 = Product(name="product 1", price=30, is_available=True, tenant_id=1)
+    product2 = Product(name="product 1", price=10, is_available=True, tenant_id=1)
+    db.add(product1)
+    db.add(product2)
     db.commit()
 
     data = {
