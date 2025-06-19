@@ -246,7 +246,7 @@ def read_subscriptions(
 
     query = (
         select(Subscription)
-        .where(Subscription.tenant_id == current_tenant.id, Subscription.state == state)
+        .where(Subscription.tenant_id == current_tenant.id)
         .offset(offset)
         .limit(limit)
     )
