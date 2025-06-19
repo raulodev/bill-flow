@@ -317,6 +317,7 @@ class SubscriptionPublic(SubscriptionBase):
     state: State
     billing_day: int
     charged_through_date: date | None = None
+    next_billing_date: date | None = None
     resume_date: date | None = None
 
 
