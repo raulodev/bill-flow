@@ -15,8 +15,8 @@ from app.database.models import (
     SubscriptionCreate,
     SubscriptionPhase,
     SubscriptionProduct,
-    SubscriptionResponse,
-    SubscriptionWithAccountAndCustomFields,
+    SubscriptionPublic,
+    SubscriptionPublicWithAccountAndCustomFields,
     TrialTimeUnit,
     UpdateBillingDay,
 )
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/subscriptions", responses=responses)
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_subscription(
     subscription: SubscriptionCreate, session: SessionDep, current_tenant: CurrentTenant
-) -> SubscriptionResponse:
+) -> SubscriptionPublic:
 
     log_operation(
         operation="CREATE",
@@ -210,7 +210,7 @@ def read_subscriptions(
     state: Literal[  # pylint: disable=redefined-outer-name
         "ACTIVE", "CANCELLED", "PAUSED", "ALL"
     ] = "ALL",
-) -> list[SubscriptionResponse]:
+) -> list[SubscriptionPublic]:
 
     log_operation(
         operation="READ",
@@ -251,7 +251,7 @@ def read_subscription(
     subscription_id: int,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> SubscriptionWithAccountAndCustomFields:
+) -> SubscriptionPublicWithAccountAndCustomFields:
 
     log_operation(
         operation="READ",
@@ -297,7 +297,7 @@ def read_subscription_by_external_id(
     external_id: str,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> SubscriptionWithAccountAndCustomFields:
+) -> SubscriptionPublicWithAccountAndCustomFields:
 
     log_operation(
         operation="READ",
@@ -344,7 +344,7 @@ def cancel_subscription(
     session: SessionDep,
     current_tenant: CurrentTenant,
     end_date: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
-) -> SubscriptionResponse:
+) -> SubscriptionPublic:
 
     log_operation(
         operation="DELETE",
@@ -415,7 +415,7 @@ def update_billing_day(
     data: UpdateBillingDay,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> SubscriptionWithAccountAndCustomFields:
+) -> SubscriptionPublicWithAccountAndCustomFields:
 
     log_operation(
         operation="UPDATE",
@@ -480,7 +480,7 @@ def pause_subscription(
     session: SessionDep,
     current_tenant: CurrentTenant,
     resume: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
-) -> SubscriptionWithAccountAndCustomFields:
+) -> SubscriptionPublicWithAccountAndCustomFields:
 
     log_operation(
         operation="UPDATE",

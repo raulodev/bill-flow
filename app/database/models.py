@@ -198,7 +198,7 @@ class CustomFieldPublic(CustomFieldBase):
 
 class CustomFieldPublicWithAccountAndProduct(CustomFieldPublic):
     account: Optional["AccountPublic"] = None
-    product: Optional["Product"] = None  # TODO: public
+    product: Optional["ProductPublic"] = None
 
 
 class ProductBase(SQLModel):
@@ -310,19 +310,18 @@ class UpdateBillingDay(SQLModel):
     billing_day: int = Field(ge=0, le=31)
 
 
-class SubscriptionResponse(SubscriptionBase):
+class SubscriptionPublic(SubscriptionBase):
     id: int
     state: State
     billing_day: int
+    charged_through_date: date | None = None
     resume_date: date | None = None
-    created: date
-    updated: date
+
+
+class SubscriptionPublicWithAccountAndCustomFields(SubscriptionPublic):
+    account: AccountPublic
     products: List[SubscriptionProductBase]
-
-
-class SubscriptionWithAccountAndCustomFields(SubscriptionResponse):
-    account: Account
-    custom_fields: List["CustomField"]
+    custom_fields: List["CustomFieldPublic"]
 
 
 class PhaseType(str, Enum):
