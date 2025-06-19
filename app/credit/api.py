@@ -2,7 +2,13 @@ from fastapi import APIRouter, status
 from sqlmodel import select
 
 from app.database.deps import CurrentTenant, SessionDep
-from app.database.models import Account, CreditBase, CreditHistory, CreditType
+from app.database.models import (
+    Account,
+    CreditBase,
+    CreditHistory,
+    CreditHistoryPublic,
+    CreditType,
+)
 from app.exceptions import NotFoundError
 from app.logging import log_operation
 from app.responses import responses
@@ -13,7 +19,7 @@ router = APIRouter(prefix="/credits", responses=responses)
 @router.post("/add", status_code=status.HTTP_201_CREATED)
 async def add_credit(
     credit: CreditBase, session: SessionDep, current_tenant: CurrentTenant
-) -> CreditHistory:
+) -> CreditHistoryPublic:
 
     log_operation(
         operation="CREATE",
@@ -64,7 +70,7 @@ async def add_credit(
 @router.post("/delete")
 async def delete_credit(
     credit: CreditBase, session: SessionDep, current_tenant: CurrentTenant
-) -> CreditHistory:
+) -> CreditHistoryPublic:
 
     log_operation(
         operation="DELETE",

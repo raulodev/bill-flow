@@ -8,7 +8,8 @@ from app.database.models import (
     Account,
     CustomField,
     CustomFieldBase,
-    CustomFieldWithAccountAndProduct,
+    CustomFieldPublic,
+    CustomFieldPublicWithAccountAndProduct,
     Product,
     Subscription,
 )
@@ -22,7 +23,7 @@ router = APIRouter(prefix="/customFields", responses=responses)
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_custom_field(
     custom_field: CustomFieldBase, session: SessionDep, current_tenant: CurrentTenant
-) -> CustomField:
+) -> CustomFieldPublic:
 
     log_operation(
         operation="CREATE",
@@ -122,7 +123,7 @@ def read_custom_fields(
     current_tenant: CurrentTenant,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
-) -> list[CustomField]:
+) -> list[CustomFieldPublic]:
 
     log_operation(
         operation="READ",
@@ -155,7 +156,7 @@ def read_custom_field(
     custom_field_id: int,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> CustomFieldWithAccountAndProduct:
+) -> CustomFieldPublicWithAccountAndProduct:
 
     log_operation(
         operation="READ",
@@ -251,7 +252,7 @@ def update_custom_field(
     custom_field: CustomFieldBase,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> CustomField:
+) -> CustomFieldPublic:
 
     log_operation(
         operation="UPDATE",

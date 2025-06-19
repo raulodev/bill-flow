@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 from app.database.deps import CurrentUser, SessionDep
-from app.database.models import Tenant, TenantBase, TenantResponse, TenantUpdate
+from app.database.models import Tenant, TenantBase, TenantPublic, TenantUpdate
 from app.exceptions import BadRequestError, NotFoundError
 from app.logging import log_operation
 from app.responses import responses
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/tenants", responses=responses)
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_tenant(
     tenant: TenantBase, session: SessionDep, current_user: CurrentUser
-) -> TenantResponse:
+) -> TenantPublic:
 
     log_operation(
         operation="CREATE",
@@ -74,7 +74,7 @@ def read_tenants(
     current_user: CurrentUser,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
-) -> list[TenantResponse]:
+) -> list[TenantPublic]:
 
     log_operation(
         operation="READ",
@@ -103,7 +103,7 @@ def update_tenants(
     tenant: TenantUpdate,
     session: SessionDep,
     current_user: CurrentUser,
-) -> TenantResponse:
+) -> TenantPublic:
 
     log_operation(
         operation="UPDATE",
