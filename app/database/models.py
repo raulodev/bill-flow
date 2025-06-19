@@ -340,7 +340,7 @@ class SubscriptionWithAccountAndCustomFields(SubscriptionResponse):
 
 class PhaseType(str, Enum):
     TRIAL = "TRIAL"
-    PAID = "PAID"
+    EVERGREEN = "EVERGREEN"
 
 
 class SubscriptionPhase(SQLModel, table=True):

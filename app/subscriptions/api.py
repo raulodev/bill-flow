@@ -116,7 +116,7 @@ async def create_subscription(
     if not subscription.trial_time_unit:
 
         initial_phase = SubscriptionPhase(
-            phase=PhaseType.PAID,
+            phase=PhaseType.EVERGREEN,
             tenant_id=current_tenant.id,
             start_date=subscription_db.start_date,
         )
@@ -154,7 +154,7 @@ async def create_subscription(
         start_date_final_phase = end_date_initial_phase + relativedelta(days=1)
 
         final_phase = SubscriptionPhase(
-            phase=PhaseType.PAID,
+            phase=PhaseType.EVERGREEN,
             tenant_id=current_tenant.id,
             start_date=start_date_final_phase,
         )
