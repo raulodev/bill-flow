@@ -349,8 +349,6 @@ class Invoice(CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     subscription_id: int = Field(foreign_key="subscription.id", ondelete="CASCADE")
     subscription: Subscription = Relationship(back_populates="invoices")
-    start_date: date = Field(nullable=False)
-    end_date: date | None = Field(default=None)
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     items: List["InvoiceItem"] = Relationship(back_populates="invoice")
 
