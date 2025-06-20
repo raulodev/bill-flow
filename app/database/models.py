@@ -347,6 +347,7 @@ class SubscriptionPhase(CreatedUpdatedFields, table=True):
 
 class Invoice(CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     subscription_id: int = Field(foreign_key="subscription.id", ondelete="CASCADE")
     subscription: Subscription = Relationship(back_populates="invoices")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
@@ -360,6 +361,7 @@ class InvoiceItem(CreatedUpdatedFields, table=True):
     product_id: int = Field(foreign_key="product.id", ondelete="CASCADE")
     quantity: int = Field(default=1)
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     amount: Decimal = Field(decimal_places=3, ge=0)
 
 
