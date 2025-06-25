@@ -294,10 +294,15 @@ class Subscription(SubscriptionBase, CreatedUpdatedFields, table=True):
         back_populates="subscription", cascade_delete=True
     )
     phases: List["SubscriptionPhase"] = Relationship(back_populates="subscription")
-    start_date: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    start_date: date = Field(
+        default=datetime.now(timezone.utc).replace(microsecond=0), nullable=False
+    )
     resume_date: date | None = Field(default=None)
     state: State = Field(default=State.ACTIVE)
-    billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
+    billing_day: int | None = Field(
+        default=None,
+        description="This only applies to subscriptions whose recurring term is month based -- e.g MONTHLY, ANNUAL, ...",
+    )
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     charged_through_date: date | None = Field(default=None)
     next_billing_date: date | None = Field(default=None)
