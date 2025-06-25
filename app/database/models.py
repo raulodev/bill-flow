@@ -253,6 +253,7 @@ class State(str, Enum):
     ACTIVE = "ACTIVE"
     CANCELLED = "CANCELLED"
     PAUSED = "PAUSED"
+    SCHEDULED_CANCELLATION = "SCHEDULED_CANCELLATION"
 
 
 class SubscriptionProductBase(SQLModel):
