@@ -1,7 +1,7 @@
 from app.database.models import BillingPeriod
 
 
-def billing_day(biiling_period: BillingPeriod, day: int):
+def get_billing_day(biiling_period: BillingPeriod, day: int):
     """
     Billing day only applies to subscriptions
     whose recurring term is month based -- e.g MONTHLY, ANNUAL, ..
