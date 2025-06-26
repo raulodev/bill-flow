@@ -67,7 +67,7 @@ class AccountBase(SQLModel):
     last_name: str | None = Field(max_length=50, default=None, index=True)
     email: EmailStr | None = Field(default=None, index=True, unique=True)
     phone: str | None = Field(max_length=25, default=None, index=True)
-    timezone: str | None = Field(max_length=50, default=None)
+    timezone: str = Field(default="UTC", max_length=50)
     external_id: str | None = Field(default=None, unique=True, index=True)
 
 
