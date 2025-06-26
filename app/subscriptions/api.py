@@ -1,7 +1,6 @@
 from datetime import date, datetime, timezone
 from typing import Annotated, Literal
 
-from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
@@ -9,12 +8,10 @@ from sqlmodel import select
 from app.database.deps import CurrentTenant, SessionDep
 from app.database.models import (
     Account,
-    PhaseType,
     Product,
     State,
     Subscription,
     SubscriptionCreate,
-    SubscriptionPhase,
     SubscriptionProduct,
     SubscriptionPublic,
     SubscriptionPublicWithAccountAndCustomFields,
@@ -24,6 +21,7 @@ from app.database.models import (
 from app.exceptions import BadRequestError, NotFoundError
 from app.logging import log_operation
 from app.responses import responses
+from app.subscriptions.phases import create_phases
 
 router = APIRouter(prefix="/subscriptions", responses=responses)
 
@@ -55,6 +53,24 @@ async def create_subscription(
 
         raise BadRequestError(
             detail="A product cannot be repeated in the same subscription"
+        )
+
+    if (
+        subscription.start_date
+        and subscription.end_date
+        and subscription.end_date <= subscription.start_date
+    ):
+
+        log_operation(
+            operation="CREATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail="The end date cannot be less than or equal to the start date",
+        )
+
+        raise BadRequestError(
+            detail="The end date cannot be less than or equal to the start date"
         )
 
     if (
@@ -124,68 +140,12 @@ async def create_subscription(
         subscription, update={"tenant_id": current_tenant.id}
     )
     session.add(subscription_db)
+
     subscription_db.products = products
 
-    phases = []
-
-    if subscription.trial_time_unit == TrialTimeUnit.UNLIMITED:
-
-        initial_phase = SubscriptionPhase(
-            phase=PhaseType.TRIAL,
-            tenant_id=current_tenant.id,
-            start_date=subscription_db.start_date,
-        )
-        phases.append(initial_phase)
-
-    if not subscription.trial_time_unit:
-
-        initial_phase = SubscriptionPhase(
-            phase=PhaseType.EVERGREEN,
-            tenant_id=current_tenant.id,
-            start_date=subscription_db.start_date,
-        )
-        phases.append(initial_phase)
-
-    if subscription.trial_time_unit in (
-        TrialTimeUnit.DAYS,
-        TrialTimeUnit.WEEKS,
-        TrialTimeUnit.MONTHS,
-        TrialTimeUnit.YEARS,
-    ):
-
-        trial_time_unit_mapping = {
-            TrialTimeUnit.DAYS: "days",
-            TrialTimeUnit.WEEKS: "weeks",
-            TrialTimeUnit.MONTHS: "months",
-            TrialTimeUnit.YEARS: "years",
-        }
-
-        trial_time_unit = trial_time_unit_mapping.get(
-            subscription.trial_time_unit, None
-        )
-
-        end_date_initial_phase = subscription_db.start_date + relativedelta(
-            **{trial_time_unit: subscription_db.trial_time}
-        )
-
-        initial_phase = SubscriptionPhase(
-            phase=PhaseType.TRIAL,
-            tenant_id=current_tenant.id,
-            start_date=subscription_db.start_date,
-            end_date=end_date_initial_phase,
-        )
-
-        start_date_final_phase = end_date_initial_phase + relativedelta(days=1)
-
-        final_phase = SubscriptionPhase(
-            phase=PhaseType.EVERGREEN,
-            tenant_id=current_tenant.id,
-            start_date=start_date_final_phase,
-        )
-
-        subscription_db.billing_day = start_date_final_phase.day
-
-        phases = [initial_phase, final_phase]
+    phases = create_phases(
+        subscription_db.billing_period, subscription_db.trial_time, subscription_db
+    )
 
     subscription_db.phases = phases
 
