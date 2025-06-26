@@ -321,7 +321,7 @@ class UpdateBillingDay(SQLModel):
 class SubscriptionPublic(SubscriptionBase):
     id: int
     state: State
-    billing_day: int
+    billing_day: int | None = None
     charged_through_date: date | None = None
     next_billing_date: date | None = None
     resume_date: date | None = None

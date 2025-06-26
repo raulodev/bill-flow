@@ -21,6 +21,7 @@ from app.database.models import (
 from app.exceptions import BadRequestError, NotFoundError
 from app.logging import log_operation
 from app.responses import responses
+from app.subscriptions.billing_day import get_billing_day
 from app.subscriptions.phases import create_phases
 
 router = APIRouter(prefix="/subscriptions", responses=responses)
@@ -123,7 +124,9 @@ async def create_subscription(
                 tenant_id=current_tenant.id,
                 detail=f"product id {product.product_id} not found",
             )
-            raise BadRequestError(detail="Product not exists")
+            raise BadRequestError(
+                detail=f"Product with id {product.product_id} not exists"
+            )
 
     products = [
         SubscriptionProduct(
@@ -143,11 +146,12 @@ async def create_subscription(
 
     subscription_db.products = products
 
-    phases = create_phases(
+    phases, billing_day = create_phases(
         subscription_db.billing_period, subscription_db.trial_time, subscription_db
     )
 
     subscription_db.phases = phases
+    subscription_db.billing_day = billing_day
 
     log_operation(
         operation="CREATE",
@@ -447,7 +451,9 @@ def update_billing_day(
 
         raise BadRequestError(detail="The subscription is cancelled")
 
-    subscription.billing_day = data.billing_day
+    billing_day = get_billing_day(subscription.billing_period, data.billing_day)
+
+    subscription.billing_day = billing_day
 
     session.commit()
     session.refresh(subscription)
