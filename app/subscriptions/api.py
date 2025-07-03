@@ -147,7 +147,7 @@ async def create_subscription(
     subscription_db.products = products
 
     phases, billing_day = create_phases(
-        subscription_db.billing_period, subscription_db.trial_time, subscription_db
+        subscription_db.trial_time_unit, subscription_db.trial_time, subscription_db
     )
 
     subscription_db.phases = phases
