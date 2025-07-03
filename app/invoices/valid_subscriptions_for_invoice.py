@@ -4,17 +4,13 @@ from typing import List
 from sqlmodel import Session, or_, select
 
 from app.database.deps import engine
-from app.database.models import (
-    BillingPeriod,
-    PhaseType,
-    State,
-    Subscription,
-    SubscriptionPhase,
-)
+from app.database.models import PhaseType, State, Subscription, SubscriptionPhase
 from app.logging import log_operation
 
 
-def valid_subscriptions_for_invoice(today: datetime) -> List[Subscription]:
+def valid_subscriptions_for_invoice(
+    today: datetime, account_id: int = None
+) -> List[Subscription]:
     """Return valid subscriptions for invoice
 
     Args:
@@ -53,40 +49,19 @@ def valid_subscriptions_for_invoice(today: datetime) -> List[Subscription]:
             )
         )
 
-        statement = statement_select.where(
-            Subscription.billing_day == today.day,
-            Subscription.billing_period.in_(
-                [
-                    BillingPeriod.MONTHLY,
-                    BillingPeriod.QUARTERLY,
-                    BillingPeriod.BIANNUAL,
-                    BillingPeriod.ANNUAL,
-                    BillingPeriod.SESQUIENNIAL,
-                    BillingPeriod.BIENNIAL,
-                    BillingPeriod.TRIENNIAL,
-                ]
-            ),
-        ).union(
-            statement_select.where(
-                Subscription.billing_period.in_(
-                    [
-                        BillingPeriod.DAILY,
-                        BillingPeriod.WEEKLY,
-                        BillingPeriod.BIWEEKLY,
-                        BillingPeriod.THIRTY_DAYS,
-                        BillingPeriod.THIRTY_ONE_DAYS,
-                    ]
-                ),
-            )
-        )
+        if account_id:
+            subscriptions = session.exec(
+                statement_select.where(Subscription.account_id == account_id)
+            ).all()
 
-        subscriptions = session.exec(statement).all()
+        else:
+            subscriptions = session.exec(statement_select).all()
 
         log_operation(
             operation="READ",
             model="Subscriptions",
             status="SUCCESS",
-            detail=f"{len(subscriptions)} subscription(s)",
+            detail=f"{len(subscriptions)} valid subscription(s)",
         )
 
         return subscriptions
