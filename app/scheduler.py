@@ -1,10 +1,11 @@
 import datetime
+from collections import defaultdict
 
 from celery import Celery
 from celery.schedules import crontab
 
 from app.invoices.create import create_invoice
-from app.invoices.valid_subscriptions_for_invoice import valid_subscriptions_for_invoice
+from app.invoices.utils import valid_subscriptions_for_invoice
 from app.settings import CELERY_BROKER_URL, TIME_ZONE
 
 app = Celery("tasks", broker=CELERY_BROKER_URL)
@@ -27,5 +28,9 @@ def generate_invoices():
 
     subscriptions = valid_subscriptions_for_invoice(today)
 
-    for subscription in subscriptions:
-        create_invoice(subscription.id)
+    group_by = defaultdict(list)  # Group by user id
+    for s in subscriptions:
+        group_by[s.account_id].append(s.id)
+
+    for account_id, subscription_ids in group_by.items():
+        create_invoice(account_id, subscription_ids, skip_validation=True)
