@@ -7,6 +7,16 @@ from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
 
+class CreatedUpdatedFields(SQLModel):
+    created: datetime = Field(
+        default=datetime.now(timezone.utc).replace(microsecond=0), nullable=False
+    )
+    updated: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc).replace(microsecond=0),
+        nullable=False,
+    )
+
+
 class Permission(str, Enum):
     READ = "READ"
     DELETE = "DELETE"
@@ -21,13 +31,9 @@ class UserBase(SQLModel):
     description: str | None = Field(max_length=255, default=None)
 
 
-class User(UserBase, table=True):
+class User(UserBase, CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     password: str = Field(min_length=8, max_length=40)
-    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
-    updated: date = Field(
-        default_factory=lambda: datetime.now(timezone.utc), nullable=False
-    )
 
 
 class TenantBase(SQLModel):
@@ -37,13 +43,9 @@ class TenantBase(SQLModel):
     external_id: str | None = Field(default=None, unique=True, index=True)
 
 
-class Tenant(TenantBase, table=True):
+class Tenant(TenantBase, CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
-    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
-    updated: date = Field(
-        default_factory=lambda: datetime.now(timezone.utc), nullable=False
-    )
 
 
 class TenantUpdate(SQLModel):
@@ -53,13 +55,11 @@ class TenantUpdate(SQLModel):
     external_id: str | None = None
 
 
-class TenantResponse(SQLModel):
+class TenantPublic(SQLModel):
     id: int
     name: str
     api_key: str
     external_id: str | None = None
-    created: date
-    updated: date
 
 
 class AccountBase(SQLModel):
@@ -67,11 +67,11 @@ class AccountBase(SQLModel):
     last_name: str | None = Field(max_length=50, default=None, index=True)
     email: EmailStr | None = Field(default=None, index=True, unique=True)
     phone: str | None = Field(max_length=25, default=None, index=True)
-    timezone: str | None = Field(max_length=50, default=None)
+    timezone: str = Field(default="UTC", max_length=50)
     external_id: str | None = Field(default=None, unique=True, index=True)
 
 
-class Account(AccountBase, table=True):
+class Account(AccountBase, CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     custom_fields: List["CustomField"] = Relationship(
         back_populates="account", cascade_delete=True
@@ -87,17 +87,16 @@ class Account(AccountBase, table=True):
         back_populates="account", cascade_delete=True
     )
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
-    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
-    updated: date = Field(
-        default_factory=lambda: datetime.now(timezone.utc), nullable=False
-    )
 
 
-class AccountWithCustomFieldsAndAddress(AccountBase):
-    tenant_id: int
+class AccountPublic(AccountBase):
+    id: int
     credit: Decimal
-    custom_fields: List["CustomField"] = []
-    address: Optional["Address"] = None
+
+
+class AccountPublicWithCustomFieldsAndAddress(AccountPublic):
+    custom_fields: List["CustomFieldPublic"] = []
+    address: Optional["AddressPublic"] = None
 
 
 class CreditReason(str, Enum):
@@ -118,7 +117,7 @@ class CreditBase(SQLModel):
     account_id: int
 
 
-class CreditHistory(CreditBase, table=True):
+class CreditHistory(CreditBase, CreatedUpdatedFields, table=True):
 
     __tablename__ = "credit_history"
 
@@ -127,10 +126,10 @@ class CreditHistory(CreditBase, table=True):
     account: Account = Relationship(back_populates="credit_history")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     type: CreditType = Field(default=CreditType.ADD)
-    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
-    updated: date = Field(
-        default_factory=lambda: datetime.now(timezone.utc), nullable=False
-    )
+
+
+class CreditHistoryPublic(CreditBase):
+    type: CreditType
 
 
 class AddressBase(SQLModel):
@@ -145,22 +144,21 @@ class AddressBase(SQLModel):
     account_id: int | None = None
 
 
-class Address(AddressBase, table=True):
+class Address(AddressBase, CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     account_id: int | None = Field(
         default=None, foreign_key="account.id", ondelete="CASCADE"
     )
     account: Account | None = Relationship(back_populates="address")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
-    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
-    updated: date = Field(
-        default_factory=lambda: datetime.now(timezone.utc), nullable=False
-    )
 
 
-class AddressWithAccount(AddressBase):
-    tenant_id: int
-    account: Optional["Account"] = None
+class AddressPublic(AddressBase):
+    id: int
+
+
+class AddressPublicWithAccount(AddressPublic):
+    account: Optional["AccountPublic"] = None
 
 
 class CustomFieldBase(SQLModel):
@@ -171,7 +169,7 @@ class CustomFieldBase(SQLModel):
     subscription_id: int | None = None
 
 
-class CustomField(CustomFieldBase, table=True):
+class CustomField(CustomFieldBase, CreatedUpdatedFields, table=True):
 
     __tablename__ = "custom_fields"
 
@@ -192,16 +190,15 @@ class CustomField(CustomFieldBase, table=True):
         back_populates="custom_fields"
     )
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
-    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
-    updated: date = Field(
-        default_factory=lambda: datetime.now(timezone.utc), nullable=False
-    )
 
 
-class CustomFieldWithAccountAndProduct(CustomFieldBase):
-    tenant_id: int
-    account: Optional["Account"] = None
-    product: Optional["Product"] = None
+class CustomFieldPublic(CustomFieldBase):
+    id: int
+
+
+class CustomFieldPublicWithAccountAndProduct(CustomFieldPublic):
+    account: Optional["AccountPublic"] = None
+    product: Optional["ProductPublic"] = None
 
 
 class ProductBase(SQLModel):
@@ -212,24 +209,21 @@ class ProductBase(SQLModel):
     is_available: bool = Field(default=True)
 
 
-class Product(ProductBase, table=True):
+class Product(ProductBase, CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     custom_fields: List["CustomField"] = Relationship(
         back_populates="product", cascade_delete=True
     )
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
-    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
-    updated: date = Field(
-        default_factory=lambda: datetime.now(timezone.utc), nullable=False
-    )
     subscriptions: list["SubscriptionProduct"] = Relationship(back_populates="product")
 
 
-class ProductWithCustomFields(ProductBase):
+class ProductPublic(ProductBase):
     id: int
-    created: date
-    updated: date
-    custom_fields: List[CustomField] = []
+
+
+class ProductPublicWithCustomFields(ProductPublic):
+    custom_fields: List[CustomFieldPublic] = []
 
 
 class BillingPeriod(str, Enum):
@@ -259,6 +253,7 @@ class State(str, Enum):
     ACTIVE = "ACTIVE"
     CANCELLED = "CANCELLED"
     PAUSED = "PAUSED"
+    SCHEDULED_CANCELLATION = "SCHEDULED_CANCELLATION"
 
 
 class SubscriptionProductBase(SQLModel):
@@ -266,7 +261,7 @@ class SubscriptionProductBase(SQLModel):
     product_id: int
 
 
-class SubscriptionProduct(SubscriptionProductBase, table=True):
+class SubscriptionProduct(SubscriptionProductBase, CreatedUpdatedFields, table=True):
 
     __tablename__ = "subscription_product"
 
@@ -279,10 +274,6 @@ class SubscriptionProduct(SubscriptionProductBase, table=True):
     )
     product: "Product" = Relationship(back_populates="subscriptions")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
-    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
-    updated: date = Field(
-        default_factory=lambda: datetime.now(timezone.utc), nullable=False
-    )
 
 
 class SubscriptionBase(SQLModel):
@@ -295,7 +286,7 @@ class SubscriptionBase(SQLModel):
     external_id: str | None = Field(default=None, unique=True, index=True)
 
 
-class Subscription(SubscriptionBase, table=True):
+class Subscription(SubscriptionBase, CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     account: Account | None = Relationship(back_populates="subscriptions")
@@ -304,15 +295,18 @@ class Subscription(SubscriptionBase, table=True):
         back_populates="subscription", cascade_delete=True
     )
     phases: List["SubscriptionPhase"] = Relationship(back_populates="subscription")
-    start_date: date = Field(default=datetime.now(timezone.utc), nullable=False)
+    start_date: date = Field(
+        default=datetime.now(timezone.utc).replace(microsecond=0), nullable=False
+    )
     resume_date: date | None = Field(default=None)
     state: State = Field(default=State.ACTIVE)
-    billing_day: int = Field(default=datetime.now(timezone.utc).day, nullable=False)
-    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
-    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
-    updated: date = Field(
-        default_factory=lambda: datetime.now(timezone.utc), nullable=False
+    billing_day: int | None = Field(
+        default=None,
+        description="This only applies to subscriptions whose recurring term is month based -- e.g MONTHLY, ANNUAL, ...",
     )
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    charged_through_date: date | None = Field(default=None)
+    next_billing_date: date | None = Field(default=None)
 
 
 class SubscriptionCreate(SubscriptionBase):
@@ -323,27 +317,27 @@ class UpdateBillingDay(SQLModel):
     billing_day: int = Field(ge=0, le=31)
 
 
-class SubscriptionResponse(SubscriptionBase):
+class SubscriptionPublic(SubscriptionBase):
     id: int
     state: State
-    billing_day: int
+    billing_day: int | None = None
+    charged_through_date: date | None = None
+    next_billing_date: date | None = None
     resume_date: date | None = None
-    created: date
-    updated: date
+
+
+class SubscriptionPublicWithAccountAndCustomFields(SubscriptionPublic):
+    account: AccountPublic
     products: List[SubscriptionProductBase]
-
-
-class SubscriptionWithAccountAndCustomFields(SubscriptionResponse):
-    account: Account
-    custom_fields: List["CustomField"]
+    custom_fields: List["CustomFieldPublic"]
 
 
 class PhaseType(str, Enum):
     TRIAL = "TRIAL"
-    PAID = "PAID"
+    EVERGREEN = "EVERGREEN"
 
 
-class SubscriptionPhase(SQLModel, table=True):
+class SubscriptionPhase(CreatedUpdatedFields, table=True):
 
     __tablename__ = "subscription_phase"
 
@@ -354,7 +348,29 @@ class SubscriptionPhase(SQLModel, table=True):
     start_date: date = Field(nullable=False)
     end_date: date | None = Field(default=None)
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
-    created: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
-    updated: date = Field(
-        default_factory=lambda: datetime.now(timezone.utc), nullable=False
-    )
+
+
+class Invoice(CreatedUpdatedFields, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    items: List["InvoiceItem"] = Relationship(back_populates="invoice")
+
+
+class InvoiceItem(CreatedUpdatedFields, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    invoice_id: int = Field(foreign_key="invoice.id", ondelete="CASCADE")
+    invoice: Invoice = Relationship(back_populates="items")
+    subscription_id: int = Field(foreign_key="subscription.id", ondelete="CASCADE")
+    product_id: int = Field(foreign_key="product.id", ondelete="CASCADE")
+    quantity: int = Field(default=1)
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    amount: Decimal = Field(decimal_places=3, ge=0)
+
+
+class Plugin(CreatedUpdatedFields, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(index=True)
+    module: str = Field(unique=True)
+    specname: str | None = Field(default=None)

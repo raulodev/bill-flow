@@ -5,7 +5,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 from app.database.deps import CurrentTenant, SessionDep
-from app.database.models import Product, ProductBase, ProductWithCustomFields
+from app.database.models import (
+    Product,
+    ProductBase,
+    ProductPublic,
+    ProductPublicWithCustomFields,
+)
 from app.exceptions import BadRequestError, NotFoundError
 from app.logging import log_operation
 from app.responses import responses
@@ -16,7 +21,7 @@ router = APIRouter(prefix="/products", responses=responses)
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_product(
     product: ProductBase, session: SessionDep, current_tenant: CurrentTenant
-) -> Product:
+) -> ProductPublic:
 
     log_operation(
         operation="CREATE",
@@ -68,7 +73,7 @@ def read_products(
     status: Literal[  # pylint: disable=redefined-outer-name
         "ALL", "AVAILABLE", "NO_AVAILABLE"
     ] = "ALL",
-) -> list[Product]:
+) -> list[ProductPublic]:
 
     log_operation(
         operation="READ",
@@ -121,7 +126,7 @@ def read_product(
     product_id: int,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> ProductWithCustomFields:
+) -> ProductPublicWithCustomFields:
 
     log_operation(
         operation="READ",
@@ -214,17 +219,17 @@ def delete_product(
 @router.put("/{product_id}")
 def update_product(
     product_id: int,
-    custom_field: ProductBase,
+    product: ProductBase,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> Product:
+) -> ProductPublic:
 
     log_operation(
         operation="UPDATE",
         model="Product",
         status="PENDING",
         tenant_id=current_tenant.id,
-        detail=f"product id {product_id} data {custom_field.model_dump()}",
+        detail=f"product id {product_id} data {product.model_dump()}",
     )
 
     product_db = session.exec(
@@ -246,7 +251,7 @@ def update_product(
 
         raise NotFoundError()
 
-    product_data = custom_field.model_dump(exclude_unset=True)
+    product_data = product.model_dump(exclude_unset=True)
     product_db.sqlmodel_update(product_data)
 
     try:

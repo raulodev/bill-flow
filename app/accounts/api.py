@@ -5,7 +5,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
 from app.database.deps import CurrentTenant, SessionDep
-from app.database.models import Account, AccountBase, AccountWithCustomFieldsAndAddress
+from app.database.models import (
+    Account,
+    AccountBase,
+    AccountPublic,
+    AccountPublicWithCustomFieldsAndAddress,
+)
 from app.exceptions import BadRequestError, NotFoundError
 from app.logging import log_operation
 from app.responses import responses
@@ -16,7 +21,7 @@ router = APIRouter(prefix="/accounts", responses=responses)
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_account(
     account: AccountBase, session: SessionDep, current_tenant: CurrentTenant
-) -> Account:
+) -> AccountPublic:
 
     log_operation(
         operation="CREATE",
@@ -71,7 +76,7 @@ def read_accounts(
     current_tenant: CurrentTenant,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
-) -> list[Account]:
+) -> list[AccountPublic]:
 
     log_operation(
         operation="READ",
@@ -104,7 +109,7 @@ def read_account(
     account_id: int,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> AccountWithCustomFieldsAndAddress:
+) -> AccountPublicWithCustomFieldsAndAddress:
 
     log_operation(
         operation="READ",
@@ -198,7 +203,7 @@ def update_address(
     account: AccountBase,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> Account:
+) -> AccountPublic:
 
     log_operation(
         operation="UPDATE",

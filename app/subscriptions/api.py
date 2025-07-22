@@ -1,7 +1,6 @@
 from datetime import date, datetime, timezone
 from typing import Annotated, Literal
 
-from dateutil.relativedelta import relativedelta
 from fastapi import APIRouter, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
@@ -9,20 +8,21 @@ from sqlmodel import select
 from app.database.deps import CurrentTenant, SessionDep
 from app.database.models import (
     Account,
-    PhaseType,
+    Product,
     State,
     Subscription,
     SubscriptionCreate,
-    SubscriptionPhase,
     SubscriptionProduct,
-    SubscriptionResponse,
-    SubscriptionWithAccountAndCustomFields,
+    SubscriptionPublic,
+    SubscriptionPublicWithAccountAndCustomFields,
     TrialTimeUnit,
     UpdateBillingDay,
 )
 from app.exceptions import BadRequestError, NotFoundError
 from app.logging import log_operation
 from app.responses import responses
+from app.subscriptions.billing_day import get_billing_day
+from app.subscriptions.phases import create_phases
 
 router = APIRouter(prefix="/subscriptions", responses=responses)
 
@@ -30,7 +30,7 @@ router = APIRouter(prefix="/subscriptions", responses=responses)
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_subscription(
     subscription: SubscriptionCreate, session: SessionDep, current_tenant: CurrentTenant
-) -> SubscriptionResponse:
+) -> SubscriptionPublic:
 
     log_operation(
         operation="CREATE",
@@ -57,6 +57,24 @@ async def create_subscription(
         )
 
     if (
+        subscription.start_date
+        and subscription.end_date
+        and subscription.end_date <= subscription.start_date
+    ):
+
+        log_operation(
+            operation="CREATE",
+            model="Subscription",
+            status="FAILED",
+            tenant_id=current_tenant.id,
+            detail="The end date cannot be less than or equal to the start date",
+        )
+
+        raise BadRequestError(
+            detail="The end date cannot be less than or equal to the start date"
+        )
+
+    if (
         subscription.trial_time_unit not in (TrialTimeUnit.UNLIMITED, None)
         and not subscription.trial_time
     ):
@@ -73,7 +91,12 @@ async def create_subscription(
             detail="trial_time is required if trial_time_unit is provided"
         )
 
-    if not session.get(Account, subscription.account_id):
+    if not session.exec(
+        select(Account).where(
+            Account.id == subscription.account_id,
+            Account.tenant_id == current_tenant.id,
+        )
+    ).first():
 
         log_operation(
             operation="CREATE",
@@ -84,6 +107,26 @@ async def create_subscription(
         )
 
         raise BadRequestError(detail="Account not exists")
+
+    for product in subscription.products:
+
+        if not session.exec(
+            select(Product).where(
+                Product.id == product.product_id,
+                Product.tenant_id == current_tenant.id,
+            )
+        ).first():
+
+            log_operation(
+                operation="CREATE",
+                model="Subscription",
+                status="FAILED",
+                tenant_id=current_tenant.id,
+                detail=f"product id {product.product_id} not found",
+            )
+            raise BadRequestError(
+                detail=f"Product with id {product.product_id} not exists"
+            )
 
     products = [
         SubscriptionProduct(
@@ -100,70 +143,15 @@ async def create_subscription(
         subscription, update={"tenant_id": current_tenant.id}
     )
     session.add(subscription_db)
+
     subscription_db.products = products
 
-    phases = []
-
-    if subscription.trial_time_unit == TrialTimeUnit.UNLIMITED:
-
-        initial_phase = SubscriptionPhase(
-            phase=PhaseType.TRIAL,
-            tenant_id=current_tenant.id,
-            start_date=subscription_db.start_date,
-        )
-        phases.append(initial_phase)
-
-    if not subscription.trial_time_unit:
-
-        initial_phase = SubscriptionPhase(
-            phase=PhaseType.PAID,
-            tenant_id=current_tenant.id,
-            start_date=subscription_db.start_date,
-        )
-        phases.append(initial_phase)
-
-    if subscription.trial_time_unit in (
-        TrialTimeUnit.DAYS,
-        TrialTimeUnit.WEEKS,
-        TrialTimeUnit.MONTHS,
-        TrialTimeUnit.YEARS,
-    ):
-
-        trial_time_unit_mapping = {
-            TrialTimeUnit.DAYS: "days",
-            TrialTimeUnit.WEEKS: "weeks",
-            TrialTimeUnit.MONTHS: "months",
-            TrialTimeUnit.YEARS: "years",
-        }
-
-        trial_time_unit = trial_time_unit_mapping.get(
-            subscription.trial_time_unit, None
-        )
-
-        end_date_initial_phase = subscription_db.start_date + relativedelta(
-            **{trial_time_unit: subscription_db.trial_time}
-        )
-
-        initial_phase = SubscriptionPhase(
-            phase=PhaseType.TRIAL,
-            tenant_id=current_tenant.id,
-            start_date=subscription_db.start_date,
-            end_date=end_date_initial_phase,
-        )
-
-        start_date_final_phase = end_date_initial_phase + relativedelta(days=1)
-
-        final_phase = SubscriptionPhase(
-            phase=PhaseType.PAID,
-            tenant_id=current_tenant.id,
-            start_date=start_date_final_phase,
-        )
-
-        subscription_db.billing_day = start_date_final_phase.day
-
-        phases = [initial_phase, final_phase]
+    phases, billing_day = create_phases(
+        subscription_db.trial_time_unit, subscription_db.trial_time, subscription_db
+    )
 
     subscription_db.phases = phases
+    subscription_db.billing_day = billing_day
 
     log_operation(
         operation="CREATE",
@@ -210,7 +198,7 @@ def read_subscriptions(
     state: Literal[  # pylint: disable=redefined-outer-name
         "ACTIVE", "CANCELLED", "PAUSED", "ALL"
     ] = "ALL",
-) -> list[SubscriptionResponse]:
+) -> list[SubscriptionPublic]:
 
     log_operation(
         operation="READ",
@@ -220,7 +208,12 @@ def read_subscriptions(
         detail=f"offset : {offset} limit: {limit} state: {state}",
     )
 
-    query = select(Subscription).offset(offset).limit(limit)
+    query = (
+        select(Subscription)
+        .where(Subscription.tenant_id == current_tenant.id)
+        .offset(offset)
+        .limit(limit)
+    )
 
     if state != "ALL":
 
@@ -251,7 +244,7 @@ def read_subscription(
     subscription_id: int,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> SubscriptionWithAccountAndCustomFields:
+) -> SubscriptionPublicWithAccountAndCustomFields:
 
     log_operation(
         operation="READ",
@@ -297,7 +290,7 @@ def read_subscription_by_external_id(
     external_id: str,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> SubscriptionWithAccountAndCustomFields:
+) -> SubscriptionPublicWithAccountAndCustomFields:
 
     log_operation(
         operation="READ",
@@ -344,7 +337,7 @@ def cancel_subscription(
     session: SessionDep,
     current_tenant: CurrentTenant,
     end_date: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
-) -> SubscriptionResponse:
+) -> SubscriptionPublic:
 
     log_operation(
         operation="DELETE",
@@ -415,7 +408,7 @@ def update_billing_day(
     data: UpdateBillingDay,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> SubscriptionWithAccountAndCustomFields:
+) -> SubscriptionPublicWithAccountAndCustomFields:
 
     log_operation(
         operation="UPDATE",
@@ -458,7 +451,9 @@ def update_billing_day(
 
         raise BadRequestError(detail="The subscription is cancelled")
 
-    subscription.billing_day = data.billing_day
+    billing_day = get_billing_day(subscription.billing_period, data.billing_day)
+
+    subscription.billing_day = billing_day
 
     session.commit()
     session.refresh(subscription)
@@ -480,7 +475,7 @@ def pause_subscription(
     session: SessionDep,
     current_tenant: CurrentTenant,
     resume: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
-) -> SubscriptionWithAccountAndCustomFields:
+) -> SubscriptionPublicWithAccountAndCustomFields:
 
     log_operation(
         operation="UPDATE",

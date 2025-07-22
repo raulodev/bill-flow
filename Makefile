@@ -28,4 +28,4 @@ celery-beat:
 	celery -A app.scheduler worker --beat --loglevel=debug
 
 mkdocs:
-	mkdocs serve
+	mkdocs serve -a 127.0.0.1:9000

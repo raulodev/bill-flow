@@ -69,7 +69,15 @@ def log_operation(
     user_part = f"for user {user_id}" if user_id else ""
     tenant_part = f"for tenant {tenant_id}" if tenant_id else ""
     detail_part = f": {detail}" if detail else ""
-    message = f"{operation} {model} {tenant_part} {user_part} {status}{detail_part}"
+
+    if tenant_part and user_part:
+        message = f"{operation} {model} {tenant_part} {user_part} {status}{detail_part}"
+    elif tenant_part:
+        message = f"{operation} {model} {tenant_part} {status}{detail_part}"
+    elif user_part:
+        message = f"{operation} {model} {user_part} {status}{detail_part}"
+    else:
+        message = f"{operation} {model} {status}{detail_part}"
 
     match level:
         case "info":
@@ -78,3 +86,5 @@ def log_operation(
             logger.warning(message)
         case "error":
             logger.error(message)
+        case "debug":
+            logger.debug(message)

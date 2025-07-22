@@ -4,7 +4,13 @@ from fastapi import APIRouter, Query, status
 from sqlmodel import select
 
 from app.database.deps import CurrentTenant, SessionDep
-from app.database.models import Account, Address, AddressBase, AddressWithAccount
+from app.database.models import (
+    Account,
+    Address,
+    AddressBase,
+    AddressPublicWithAccount,
+    AddressPublic,
+)
 from app.exceptions import BadRequestError, NotFoundError
 from app.logging import log_operation
 from app.responses import responses
@@ -15,7 +21,7 @@ router = APIRouter(prefix="/addresses", responses=responses)
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_address(
     address: AddressBase, session: SessionDep, current_tenant: CurrentTenant
-) -> Address:
+) -> AddressPublic:
 
     log_operation(
         operation="CREATE",
@@ -62,7 +68,7 @@ def read_addresses(
     current_tenant: CurrentTenant,
     offset: int = 0,
     limit: Annotated[int, Query(le=100)] = 100,
-) -> list[Address]:
+) -> list[AddressPublic]:
 
     log_operation(
         operation="READ",
@@ -95,7 +101,7 @@ def read_address(
     address_id: int,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> AddressWithAccount:
+) -> AddressPublicWithAccount:
 
     log_operation(
         operation="READ",
@@ -189,7 +195,7 @@ def update_address(
     address: AddressBase,
     session: SessionDep,
     current_tenant: CurrentTenant,
-) -> Address:
+) -> AddressPublic:
 
     log_operation(
         operation="UPDATE",
