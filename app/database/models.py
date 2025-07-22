@@ -350,14 +350,31 @@ class SubscriptionPhase(CreatedUpdatedFields, table=True):
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
 
 
+class InvoicePaymentStatus(str, Enum):
+    PENDING = "PENDING"
+    PAID = "PAID"
+    PARTIALLY_PAID = "PARTIALLY_PAID"
+    CANCELLED = "CANCELLED"
+
+
 class Invoice(CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     items: List["InvoiceItem"] = Relationship(back_populates="invoice")
+    payments: List["Payment"] = Relationship(back_populates="invoice")
+    payment_status: InvoicePaymentStatus = Field(default=InvoicePaymentStatus.PENDING)
+
+
+class InvoiceItemPaymentStatus(str, Enum):
+    PENDING = "PENDING"
+    PAID = "PAID"
 
 
 class InvoiceItem(CreatedUpdatedFields, table=True):
+
+    __tablename__ = "invoice_item"
+
     id: Optional[int] = Field(default=None, primary_key=True)
     invoice_id: int = Field(foreign_key="invoice.id", ondelete="CASCADE")
     invoice: Invoice = Relationship(back_populates="items")
@@ -367,6 +384,10 @@ class InvoiceItem(CreatedUpdatedFields, table=True):
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     amount: Decimal = Field(decimal_places=3, ge=0)
+    payment_status: InvoiceItemPaymentStatus = Field(
+        default=InvoiceItemPaymentStatus.PENDING
+    )
+    payments: "PaymentItem" = Relationship(back_populates="invoice_item")
 
 
 class Plugin(CreatedUpdatedFields, table=True):
@@ -374,3 +395,36 @@ class Plugin(CreatedUpdatedFields, table=True):
     name: str = Field(index=True)
     module: str = Field(unique=True)
     specname: str | None = Field(default=None)
+
+
+class PaymentStatus(str, Enum):
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
+class Payment(CreatedUpdatedFields, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    invoice_id: int = Field(foreign_key="invoice.id", ondelete="CASCADE")
+    invoice: Invoice = Relationship(back_populates="payments")
+    amount: Decimal = Field(decimal_places=3, ge=0)
+    status: PaymentStatus = Field(default=PaymentStatus.PENDING)
+    payment_method: str | None = Field(default=None, index=True)
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    items: List["PaymentItem"] = Relationship(back_populates="payment")
+    message: str | None = Field(default=None)
+
+
+class PaymentItem(CreatedUpdatedFields, table=True):
+
+    __tablename__ = "payment_item"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    payment_id: int = Field(foreign_key="payment.id", ondelete="CASCADE")
+    payment: Payment = Relationship(back_populates="items")
+    invoice_item_id: int = Field(foreign_key="invoice_item.id", ondelete="CASCADE")
+    invoice_item: InvoiceItem = Relationship(back_populates="payments")
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    amount: Decimal = Field(decimal_places=3, ge=0)
