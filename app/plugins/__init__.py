@@ -9,27 +9,7 @@ from app.database.deps import engine
 from app.database.models import Plugin
 from app.logging import log_operation
 
-hookspec = pluggy.HookspecMarker("bill-flow")
-hookimpl = pluggy.HookimplMarker("bill-flow")
-
-
-@hookimpl
-def setup_project(config, args):
-    """This hook is used to process the initial config
-    and possibly input arguments.
-    """
-    if args:
-        config.process_args(args)
-
-    return config
-
-
-class MySpec:
-    """A hook specification namespace."""
-
-    @hookspec
-    def payment(self, args) -> str:
-        """Make a payment"""
+plugin_manager = pluggy.PluginManager("bill-flow")
 
 
 def install_dependencies(dependencies: list[str], module_name: str):
@@ -92,10 +72,6 @@ def register_plugin(module_name: str, setup: dict):
             )
 
         session.commit()
-
-
-plugin_manager = pluggy.PluginManager("bill-flow")
-plugin_manager.add_hookspecs(MySpec)
 
 
 IGNORE_FILES = ["__init__.py", "api.py"]
