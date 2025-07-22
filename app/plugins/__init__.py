@@ -68,6 +68,7 @@ def register_plugin(module_name: str, setup: dict):
                 name=setup.get("name", module_name),
                 module=module_name,
                 specname=setup.get("specname"),
+                description=setup.get("description"),
             )
 
             session.add(plugin_db)
@@ -97,13 +98,16 @@ plugin_manager = pluggy.PluginManager("bill-flow")
 plugin_manager.add_hookspecs(MySpec)
 
 
+IGNORE_FILES = ["__init__.py", "api.py"]
+
+
 def setup_plugins():
 
     plugins_dir = os.path.dirname(__file__)
 
     for filename in os.listdir(plugins_dir):
 
-        if filename.endswith(".py") and filename != "__init__.py":
+        if filename.endswith(".py") and filename not in IGNORE_FILES:
             module_name = f"app.plugins.{filename[:-3]}"
 
             try:

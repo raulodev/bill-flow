@@ -395,6 +395,15 @@ class Plugin(CreatedUpdatedFields, table=True):
     name: str = Field(index=True)
     module: str = Field(unique=True)
     specname: str | None = Field(default=None)
+    description: str | None = Field(default=None, max_length=255)
+
+
+class PluginPublic(SQLModel):
+    id: int
+    name: str
+    module: str
+    specname: str | None = None
+    description: str | None = None
 
 
 class PaymentStatus(str, Enum):
