@@ -8,11 +8,11 @@ services:
 
 
   bill-flow:
-    image: raulodev/bill-flow:1.0.4-alpha
+    image: raulodev/bill-flow:1.0.5-alpha
     container_name: bill-flow
     restart: always
     ports:
-      - "8080:8080"      
+      - "127.0.0.1:8080:8080"      
     env_file:
       - ../.env.example
     depends_on:
@@ -21,7 +21,7 @@ services:
       - bill-flow-shared-data:/database.db
 
   bill-flow-celery:
-    image: raulodev/bill-flow:1.0.4-alpha
+    image: raulodev/bill-flow:1.0.5-alpha
     container_name: bill-flow-celery
     restart: always
     env_file:
@@ -34,7 +34,7 @@ services:
       - bill-flow-shared-data:/database.db
 
   bill-flow-beat:
-    image: raulodev/bill-flow:1.0.4-alpha
+    image: raulodev/bill-flow:1.0.5-alpha
     container_name: bill-flow-beat
     restart: always
     env_file:
