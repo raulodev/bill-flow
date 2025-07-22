@@ -5,7 +5,7 @@ from dateutil.relativedelta import relativedelta
 from fastapi.testclient import TestClient
 
 from app.database.models import Account, BillingPeriod, Product
-from app.invoices.valid_subscriptions_for_invoice import valid_subscriptions_for_invoice
+from app.invoices.utils import valid_subscriptions_for_invoice
 from tests.conftest import AUTH_HEADERS
 
 

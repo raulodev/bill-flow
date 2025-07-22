@@ -8,6 +8,30 @@ from app.database.models import PhaseType, State, Subscription, SubscriptionPhas
 from app.logging import log_operation
 
 
+def statement(today: datetime):
+
+    return (
+        select(Subscription)
+        .join(SubscriptionPhase)
+        .where(
+            SubscriptionPhase.phase == PhaseType.EVERGREEN,
+            SubscriptionPhase.start_date <= today.date(),
+        )
+        .where(
+            Subscription.state == State.ACTIVE,
+            or_(Subscription.end_date == None, Subscription.end_date > today.date()),
+            or_(
+                Subscription.charged_through_date == None,
+                Subscription.charged_through_date < today.date(),
+            ),
+            or_(
+                Subscription.next_billing_date == None,
+                Subscription.next_billing_date == today.date(),
+            ),
+        )
+    )
+
+
 def valid_subscriptions_for_invoice(
     today: datetime, account_id: int = None
 ) -> List[Subscription]:
@@ -25,29 +49,7 @@ def valid_subscriptions_for_invoice(
         log_operation(
             operation="READ", model="Subscriptions", status="PENDING", detail=today
         )
-
-        statement_select = (
-            select(Subscription)
-            .join(SubscriptionPhase)
-            .where(
-                SubscriptionPhase.phase == PhaseType.EVERGREEN,
-                SubscriptionPhase.start_date <= today.date(),
-            )
-            .where(
-                Subscription.state == State.ACTIVE,
-                or_(
-                    Subscription.end_date == None, Subscription.end_date > today.date()
-                ),
-                or_(
-                    Subscription.charged_through_date == None,
-                    Subscription.charged_through_date < today.date(),
-                ),
-                or_(
-                    Subscription.next_billing_date == None,
-                    Subscription.next_billing_date == today.date(),
-                ),
-            )
-        )
+        statement_select = statement(today)
 
         if account_id:
             subscriptions = session.exec(
@@ -65,3 +67,16 @@ def valid_subscriptions_for_invoice(
         )
 
         return subscriptions
+
+
+def is_subscription_valid_for_invoice(today: datetime, subscription_id: int):
+
+    with Session(engine) as session:
+
+        statement_select = statement(today)
+
+        subscription = session.exec(
+            statement_select.where(Subscription.id == subscription_id)
+        ).first()
+
+        return bool(subscription)
