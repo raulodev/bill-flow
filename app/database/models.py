@@ -87,6 +87,7 @@ class Account(AccountBase, CreatedUpdatedFields, table=True):
         back_populates="account", cascade_delete=True
     )
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    invoices: List["Invoice"] = Relationship(back_populates="account")
 
 
 class AccountPublic(AccountBase):
@@ -97,6 +98,26 @@ class AccountPublic(AccountBase):
 class AccountPublicWithCustomFieldsAndAddress(AccountPublic):
     custom_fields: List["CustomFieldPublic"] = []
     address: Optional["AddressPublic"] = None
+
+
+class PaymentMethodBase(SQLModel):
+    account_id: int
+    plugin_id: int
+    is_default: bool = True
+    external_id: str | None = Field(default=None, unique=True, index=True)
+
+
+class PaymentMethod(PaymentMethodBase, CreatedUpdatedFields, table=True):
+
+    __tablename__ = "payment_method"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    plugin_id: int = Field(foreign_key="plugin.id", ondelete="CASCADE")
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    custom_fields: List["CustomField"] = Relationship(
+        back_populates="payment_method", cascade_delete=True
+    )
 
 
 class CreditReason(str, Enum):
@@ -189,6 +210,13 @@ class CustomField(CustomFieldBase, CreatedUpdatedFields, table=True):
     subscription: Optional["Subscription"] = Relationship(
         back_populates="custom_fields"
     )
+    payment_method_id: int | None = Field(
+        default=None, foreign_key="payment_method.id", ondelete="CASCADE"
+    )
+    payment_method: Optional["PaymentMethod"] = Relationship(
+        back_populates="custom_fields"
+    )
+
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
 
 
@@ -214,6 +242,7 @@ class Product(ProductBase, CreatedUpdatedFields, table=True):
     custom_fields: List["CustomField"] = Relationship(
         back_populates="product", cascade_delete=True
     )
+    invoice_items: List["InvoiceItem"] = Relationship(back_populates="product")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     subscriptions: list["SubscriptionProduct"] = Relationship(back_populates="product")
 
@@ -307,6 +336,7 @@ class Subscription(SubscriptionBase, CreatedUpdatedFields, table=True):
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     charged_through_date: date | None = Field(default=None)
     next_billing_date: date | None = Field(default=None)
+    invoice_items: List["InvoiceItem"] = Relationship(back_populates="subscription")
 
 
 class SubscriptionCreate(SubscriptionBase):
@@ -360,6 +390,7 @@ class InvoicePaymentStatus(str, Enum):
 class Invoice(CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    account: Account = Relationship(back_populates="invoices")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     items: List["InvoiceItem"] = Relationship(back_populates="invoice")
     payments: List["Payment"] = Relationship(back_populates="invoice")
@@ -379,7 +410,9 @@ class InvoiceItem(CreatedUpdatedFields, table=True):
     invoice_id: int = Field(foreign_key="invoice.id", ondelete="CASCADE")
     invoice: Invoice = Relationship(back_populates="items")
     subscription_id: int = Field(foreign_key="subscription.id", ondelete="CASCADE")
+    subscription: "Subscription" = Relationship(back_populates="invoice_items")
     product_id: int = Field(foreign_key="product.id", ondelete="CASCADE")
+    product: "Product" = Relationship(back_populates="invoice_items")
     quantity: int = Field(default=1)
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
@@ -392,7 +425,7 @@ class InvoiceItem(CreatedUpdatedFields, table=True):
 
 class Plugin(CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(index=True)
+    name: str = Field(index=True, unique=True)
     module: str = Field(unique=True)
     specname: str | None = Field(default=None)
     description: str | None = Field(default=None, max_length=255)
