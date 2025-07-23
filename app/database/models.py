@@ -86,6 +86,9 @@ class Account(AccountBase, CreatedUpdatedFields, table=True):
     credit_history: List["CreditHistory"] = Relationship(
         back_populates="account", cascade_delete=True
     )
+    payment_method: List["PaymentMethod"] = Relationship(
+        back_populates="account", cascade_delete=True
+    )
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     invoices: List["Invoice"] = Relationship(back_populates="account")
 
@@ -113,11 +116,22 @@ class PaymentMethod(PaymentMethodBase, CreatedUpdatedFields, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    account: Account = Relationship(back_populates="payment_method")
     plugin_id: int = Field(foreign_key="plugin.id", ondelete="CASCADE")
+    plugin: "Plugin" = Relationship(back_populates="payment_method")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     custom_fields: List["CustomField"] = Relationship(
         back_populates="payment_method", cascade_delete=True
     )
+
+
+class PaymentMethodPublic(PaymentMethodBase):
+    id: int
+
+
+class PaymentMethodPublicWithAccountAndPlugin(PaymentMethodBase):
+    account: "AccountPublic"
+    plugin: "PluginPublic"
 
 
 class CreditReason(str, Enum):
@@ -420,7 +434,7 @@ class InvoiceItem(CreatedUpdatedFields, table=True):
     payment_status: InvoiceItemPaymentStatus = Field(
         default=InvoiceItemPaymentStatus.PENDING
     )
-    payments: "PaymentItem" = Relationship(back_populates="invoice_item")
+    payment_item: "PaymentItem" = Relationship(back_populates="invoice_item")
 
 
 class Plugin(CreatedUpdatedFields, table=True):
@@ -429,6 +443,7 @@ class Plugin(CreatedUpdatedFields, table=True):
     module: str = Field(unique=True)
     specname: str | None = Field(default=None)
     description: str | None = Field(default=None, max_length=255)
+    payment_method: PaymentMethod = Relationship(back_populates="plugin")
 
 
 class PluginPublic(SQLModel):
@@ -466,7 +481,7 @@ class PaymentItem(CreatedUpdatedFields, table=True):
     payment_id: int = Field(foreign_key="payment.id", ondelete="CASCADE")
     payment: Payment = Relationship(back_populates="items")
     invoice_item_id: int = Field(foreign_key="invoice_item.id", ondelete="CASCADE")
-    invoice_item: InvoiceItem = Relationship(back_populates="payments")
+    invoice_item: InvoiceItem = Relationship(back_populates="payment_item")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     amount: Decimal = Field(decimal_places=3, ge=0)
