@@ -12,7 +12,7 @@ from app.logging import log_operation
 plugin_manager = pluggy.PluginManager("bill-flow")
 
 
-def install_dependencies(dependencies: list[str], module_name: str):
+def install_plugins_dependencies(dependencies: list[str], module_name: str):
     try:
         subprocess.check_call(["pip", "install", *dependencies])
         log_operation(
@@ -63,6 +63,7 @@ def register_plugin(module_name: str, setup: dict):
         else:
             plugin_db.name = setup.get("name", module_name)
             plugin_db.specname = setup.get("specname")
+            plugin_db.description = setup.get("description")
 
             log_operation(
                 operation="UPDATE",
@@ -77,7 +78,7 @@ def register_plugin(module_name: str, setup: dict):
 IGNORE_FILES = ["__init__.py", "api.py"]
 
 
-def setup_plugins():
+def setup_plugins(install_plugin_deps=True, save_in_db=True):
 
     plugins_dir = os.path.dirname(__file__)
 
@@ -91,24 +92,29 @@ def setup_plugins():
 
                 setup = getattr(module, "__setup__", {})
 
-                plugin_deps = setup.get("dependencies")
+                if install_plugin_deps:
 
-                deps_installed = None
+                    plugin_deps = setup.get("dependencies")
 
-                if (
-                    plugin_deps
-                    and isinstance(plugin_deps, list)
-                    and all(isinstance(d, str) for d in plugin_deps)
-                ):
+                    deps_installed = None
 
-                    deps_installed = install_dependencies(plugin_deps, module_name)
+                    if (
+                        plugin_deps
+                        and isinstance(plugin_deps, list)
+                        and all(isinstance(d, str) for d in plugin_deps)
+                    ):
 
-                if deps_installed is False:
-                    continue
+                        deps_installed = install_plugins_dependencies(
+                            plugin_deps, module_name
+                        )
+
+                    if deps_installed is False:
+                        continue
 
                 plugin_manager.register(module)
 
-                register_plugin(module_name, setup)
+                if save_in_db:
+                    register_plugin(module_name, setup)
 
             except pluggy.PluginValidationError as e:
                 log_operation(
