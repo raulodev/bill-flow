@@ -47,7 +47,7 @@ def test_create_payment_method(client: TestClient, db):
 
     plugin = Plugin(
         name="Test Plugin",
-        module="test_plugin",
+        path="test_plugin",
     )
     db.add(plugin)
     db.commit()
@@ -108,7 +108,7 @@ def test_create_payment_method_external_id_duplicated(client: TestClient, db):
 
     plugin = Plugin(
         name="Test Plugin",
-        module="test_plugin",
+        path="test_plugin",
     )
     db.add(plugin)
     db.commit()
@@ -144,7 +144,7 @@ def test_create_default_payment_method(client: TestClient, db):
 
     plugin = Plugin(
         name="Test Plugin",
-        module="test_plugin",
+        path="test_plugin",
     )
     db.add(plugin)
 
@@ -194,7 +194,7 @@ def test_read_payment_methods(client: TestClient, db):
 
     plugin = Plugin(
         name="Test Plugin",
-        module="test_plugin",
+        path="test_plugin",
     )
     db.add(plugin)
 
@@ -237,7 +237,7 @@ def test_read_payment_method(client: TestClient, db):
 
     plugin = Plugin(
         name="Test Plugin",
-        module="test_plugin",
+        path="test_plugin",
     )
     db.add(plugin)
     db.commit()
@@ -277,7 +277,7 @@ def test_delete_payment_method_error(client: TestClient, db):
 
     plugin = Plugin(
         name="Test Plugin",
-        module="test_plugin",
+        path="test_plugin",
     )
     db.add(plugin)
     db.commit()
@@ -307,7 +307,7 @@ def test_delete_payment_method(client: TestClient, db):
 
     plugin = Plugin(
         name="Test Plugin",
-        module="test_plugin",
+        path="test_plugin",
     )
     db.add(plugin)
     db.commit()
@@ -354,7 +354,7 @@ def test_update_payment_method_duplicated_external_id(client: TestClient, db):
 
     plugin = Plugin(
         name="Test Plugin",
-        module="test_plugin",
+        path="test_plugin",
     )
     db.add(plugin)
     db.commit()
@@ -403,7 +403,7 @@ def test_update_payment_method(client: TestClient, db):
 
     plugin = Plugin(
         name="Test Plugin",
-        module="test_plugin",
+        path="test_plugin",
     )
     db.add(plugin)
     db.commit()
