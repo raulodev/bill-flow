@@ -46,6 +46,9 @@ class TenantBase(SQLModel):
 class Tenant(TenantBase, CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
+    accounts: List["Account"] = Relationship(
+        back_populates="tenant", cascade_delete=True
+    )
 
 
 class TenantUpdate(SQLModel):
@@ -90,6 +93,7 @@ class Account(AccountBase, CreatedUpdatedFields, table=True):
         back_populates="account", cascade_delete=True
     )
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    tenant: Tenant = Relationship(back_populates="accounts")
     invoices: List["Invoice"] = Relationship(back_populates="account")
 
 

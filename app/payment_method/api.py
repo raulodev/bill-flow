@@ -85,7 +85,7 @@ async def create_payment_method(
                     PaymentMethod.account_id == payment_method.account_id,
                     PaymentMethod.id != payment_method_db.id,
                 )
-                .values(is_default=0)
+                .values(is_default=False)
             )
             session.commit()
 
