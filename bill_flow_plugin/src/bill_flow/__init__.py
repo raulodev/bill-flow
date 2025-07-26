@@ -45,7 +45,7 @@ class BillFlow:
 
         dependencies = dependencies or []
 
-        def decorator(func):
+        def decorator(func: Callable):
 
             func.meta = {
                 "name": name,
