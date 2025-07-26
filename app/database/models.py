@@ -49,6 +49,9 @@ class Tenant(TenantBase, CreatedUpdatedFields, table=True):
     accounts: List["Account"] = Relationship(
         back_populates="tenant", cascade_delete=True
     )
+    custom_fields: List["CustomField"] = Relationship(
+        back_populates="tenant", cascade_delete=True
+    )
 
 
 class TenantUpdate(SQLModel):
@@ -236,6 +239,7 @@ class CustomField(CustomFieldBase, CreatedUpdatedFields, table=True):
     )
 
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    tenant: Tenant = Relationship(back_populates="custom_fields")
 
 
 class CustomFieldPublic(CustomFieldBase):
