@@ -443,9 +443,9 @@ class InvoiceItem(CreatedUpdatedFields, table=True):
 
 class Plugin(CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(index=True, unique=True)
-    module: str = Field(unique=True)
-    specname: str | None = Field(default=None)
+    name: str = Field(index=True)
+    path: str = Field(index=True, unique=True)
+    hook_caller: str | None = Field(default=None)
     description: str | None = Field(default=None, max_length=255)
     payment_method: PaymentMethod = Relationship(back_populates="plugin")
 
@@ -453,8 +453,8 @@ class Plugin(CreatedUpdatedFields, table=True):
 class PluginPublic(SQLModel):
     id: int
     name: str
-    module: str
-    specname: str | None = None
+    path: str
+    hook_caller: str | None = None
     description: str | None = None
 
 
