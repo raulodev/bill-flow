@@ -1,10 +1,11 @@
-from datetime import date, datetime, timezone
+from datetime import date
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, Query, status
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import select
 
+from app.clock import clock
 from app.database.deps import CurrentTenant, SessionDep
 from app.database.models import (
     Account,
@@ -336,7 +337,7 @@ def cancel_subscription(
     subscription_id: int,
     session: SessionDep,
     current_tenant: CurrentTenant,
-    end_date: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
+    end_date: Annotated[date, Query(ge=clock.now().date())] = None,
 ) -> SubscriptionPublic:
 
     log_operation(
@@ -380,10 +381,10 @@ def cancel_subscription(
 
         raise BadRequestError(detail="The subscription is cancelled")
 
-    today = datetime.now(timezone.utc).date()
+    now = clock.now().date()
 
     state = State.ACTIVE
-    if not end_date or end_date == today:
+    if not end_date or end_date == now:
         state = State.CANCELLED
 
     subscription.state = state
@@ -474,7 +475,7 @@ def pause_subscription(
     subscription_id: int,
     session: SessionDep,
     current_tenant: CurrentTenant,
-    resume: Annotated[date, Query(ge=datetime.now(timezone.utc).date())] = None,
+    resume: Annotated[date, Query(ge=clock.now().date())] = None,
 ) -> SubscriptionPublicWithAccountAndCustomFields:
 
     log_operation(
@@ -518,10 +519,10 @@ def pause_subscription(
 
         raise BadRequestError(detail="The subscription is cancelled")
 
-    today = datetime.now(timezone.utc).date()
+    now = clock.now().date()
 
     state = State.ACTIVE
-    if not resume or resume > today:
+    if not resume or resume > now:
         state = State.PAUSED
 
     subscription.state = state
