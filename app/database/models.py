@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional
@@ -6,13 +6,13 @@ from typing import List, Optional
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
+from app.clock import clock
+
 
 class CreatedUpdatedFields(SQLModel):
-    created: datetime = Field(
-        default=datetime.now(timezone.utc).replace(microsecond=0), nullable=False
-    )
+    created: datetime = Field(default=clock.now(full=True), nullable=False)
     updated: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc).replace(microsecond=0),
+        default_factory=lambda: clock.now(full=True),
         nullable=False,
     )
 
@@ -332,7 +332,7 @@ class SubscriptionBase(SQLModel):
     billing_period: BillingPeriod
     trial_time_unit: TrialTimeUnit | None = Field(default=None)
     trial_time: int | None = Field(default=None)
-    start_date: date = Field(default=datetime.now(timezone.utc).date(), nullable=False)
+    start_date: date = Field(default=clock.now().date(), nullable=False)
     end_date: date | None = Field(default=None)
     external_id: str | None = Field(default=None, unique=True, index=True)
 
@@ -346,9 +346,7 @@ class Subscription(SubscriptionBase, CreatedUpdatedFields, table=True):
         back_populates="subscription", cascade_delete=True
     )
     phases: List["SubscriptionPhase"] = Relationship(back_populates="subscription")
-    start_date: date = Field(
-        default=datetime.now(timezone.utc).replace(microsecond=0), nullable=False
-    )
+    start_date: date = Field(default=clock.now().date(), nullable=False)
     resume_date: date | None = Field(default=None)
     state: State = Field(default=State.ACTIVE)
     billing_day: int | None = Field(
