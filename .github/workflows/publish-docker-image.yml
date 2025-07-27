@@ -15,7 +15,7 @@ on:
 
 jobs:
   push_to_registry:
-    if: ${{ ! startsWith(github.event.release.tag_name, 'plugin') }}
+    if: startsWith(github.event.release.tag_name, 'docker')
     name: Push Docker image to Docker Hub
     runs-on: ubuntu-latest
     permissions:
