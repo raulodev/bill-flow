@@ -7,10 +7,7 @@ from app.invoices.utils import is_subscription_valid_for_invoice
 from tests.conftest import AUTH_HEADERS
 
 
-def test_is_subscription_valid_for_invoice(client: TestClient, db):
-
-    today = datetime.now(timezone.utc).today().replace(microsecond=0)
-
+def fill_db(client, db):
     account1 = Account(
         first_name="1", external_id=1, email="test@example.com", tenant_id=1
     )
@@ -23,6 +20,13 @@ def test_is_subscription_valid_for_invoice(client: TestClient, db):
     )
 
     assert response.status_code == 201
+
+
+def test_is_subscription_valid_for_invoice(client: TestClient, db):
+
+    today = datetime.now(timezone.utc)
+
+    fill_db(client, db)
 
     data = {
         "account_id": 1,
@@ -37,6 +41,15 @@ def test_is_subscription_valid_for_invoice(client: TestClient, db):
     assert response.status_code == 201
 
     assert is_subscription_valid_for_invoice(today, response.json()["id"]) is True
+
+
+def test_is_subscription_valid_for_invoice_error_with_trial_time(
+    client: TestClient, db
+):
+
+    today = datetime.now(timezone.utc)
+
+    fill_db(client, db)
 
     data = {
         "account_id": 1,
@@ -54,6 +67,15 @@ def test_is_subscription_valid_for_invoice(client: TestClient, db):
 
     assert is_subscription_valid_for_invoice(today, response.json()["id"]) is False
 
+
+def test_is_subscription_valid_for_invoice_error_with_time_inlimited(
+    client: TestClient, db
+):
+
+    today = datetime.now(timezone.utc)
+
+    fill_db(client, db)
+
     data = {
         "account_id": 1,
         "products": [
@@ -68,6 +90,13 @@ def test_is_subscription_valid_for_invoice(client: TestClient, db):
     assert response.status_code == 201
 
     assert is_subscription_valid_for_invoice(today, response.json()["id"]) is False
+
+
+def test_is_subscription_valid_for_invoice_error_subs_deleted(client: TestClient, db):
+
+    today = datetime.now(timezone.utc)
+
+    fill_db(client, db)
 
     data = {
         "account_id": 1,
