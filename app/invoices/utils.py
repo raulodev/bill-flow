@@ -8,25 +8,25 @@ from app.database.models import PhaseType, State, Subscription, SubscriptionPhas
 from app.logging import log_operation
 
 
-def statement(today: datetime):
+def statement(date: datetime):
 
     return (
         select(Subscription)
         .join(SubscriptionPhase)
         .where(
             SubscriptionPhase.phase == PhaseType.EVERGREEN,
-            SubscriptionPhase.start_date <= today.date(),
+            SubscriptionPhase.start_date <= date.date(),
         )
         .where(
             Subscription.state == State.ACTIVE,
-            or_(Subscription.end_date == None, Subscription.end_date > today.date()),
+            or_(Subscription.end_date == None, Subscription.end_date > date.date()),
             or_(
                 Subscription.charged_through_date == None,
-                Subscription.charged_through_date < today.date(),
+                Subscription.charged_through_date < date.date(),
             ),
             or_(
                 Subscription.next_billing_date == None,
-                Subscription.next_billing_date == today.date(),
+                Subscription.next_billing_date == date.date(),
             ),
         )
     )
@@ -69,11 +69,11 @@ def valid_subscriptions_for_invoice(
         return subscriptions
 
 
-def is_subscription_valid_for_invoice(today: datetime, subscription_id: int):
+def is_subscription_valid_for_invoice(date: datetime, subscription_id: int):
 
     with Session(engine) as session:
 
-        statement_select = statement(today)
+        statement_select = statement(date)
 
         subscription = session.exec(
             statement_select.where(Subscription.id == subscription_id)

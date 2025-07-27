@@ -51,7 +51,7 @@ def create_invoice(account_id: int, subscription_ids: List[int], skip_validation
         detail=f"for account id {account_id} and subscription ids {subscription_ids}",
     )
 
-    today = datetime.now(timezone.utc).today().replace(microsecond=0)
+    now = datetime.now(timezone.utc)
 
     with Session(engine) as session:
 
@@ -87,7 +87,7 @@ def create_invoice(account_id: int, subscription_ids: List[int], skip_validation
         for subs in subscriptions:
 
             if not skip_validation and not is_subscription_valid_for_invoice(
-                today, subs.id
+                now, subs.id
             ):
                 log_operation(
                     operation="CREATE",
@@ -124,10 +124,10 @@ def create_invoice(account_id: int, subscription_ids: List[int], skip_validation
 
                 total_amount += amount
 
-            subs.charged_through_date = today.date()
+            subs.charged_through_date = now.date()
 
             subs.next_billing_date = calculate_date_from_billing_period(
-                subs.billing_period, today.date()
+                subs.billing_period, now.date()
             )
 
             log_operation(
