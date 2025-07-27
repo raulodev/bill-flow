@@ -16,16 +16,16 @@ pytest:
 	pytest --cov=app --cov-report=xml tests/
 
 celery:
-	celery -A app.scheduler worker --loglevel=debug
+	celery -A app.tasks worker --loglevel=debug
 
 beat:
-	celery -A app.scheduler beat --loglevel=debug
+	celery -A app.tasks beat --loglevel=debug
 
 flower:
-	celery -A app.scheduler flower
+	celery -A app.tasks flower
 
 celery-beat:
-	celery -A app.scheduler worker --beat --loglevel=debug
+	celery -A app.tasks worker --beat --loglevel=debug
 
 mkdocs:
 	mkdocs serve -a 127.0.0.1:9000

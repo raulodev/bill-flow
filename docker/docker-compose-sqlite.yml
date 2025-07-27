@@ -26,7 +26,7 @@ services:
     restart: always
     env_file:
       - ../.env.example    
-    command: ["celery" ,"-A" ,"app.scheduler", "worker", "--loglevel=debug"]
+    command: ["celery" ,"-A" ,"app.tasks", "worker", "--loglevel=debug"]
     depends_on:
       - redis
       - bill-flow
@@ -39,7 +39,7 @@ services:
     restart: always
     env_file:
       - ../.env.example      
-    command: ["celery" ,"-A" ,"app.scheduler", "beat", "--loglevel=debug"]
+    command: ["celery" ,"-A" ,"app.tasks", "beat", "--loglevel=debug"]
     depends_on:
       - redis
       - bill-flow
