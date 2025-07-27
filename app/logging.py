@@ -58,7 +58,7 @@ for logger_name in loggers:
 def log_operation(
     operation: Literal["CREATE", "READ", "UPDATE", "DELETE"],
     model: str,
-    status: Literal["SUCCESS", "FAILED", "PENDING"],
+    status: Literal["SUCCESS", "FAILED", "PENDING", "SKIPPED"],
     tenant_id: int = None,
     user_id: int = None,
     detail: str | None = None,

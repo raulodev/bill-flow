@@ -16,6 +16,7 @@ IGNORE_FILES = ["__init__.py", "api.py", "setup.py"]
 
 
 def install_plugins_dependencies(dependencies: list[str], module_name: str):
+    """Install dependencies for a plugin."""
     try:
         subprocess.check_call(["pip", "install", *dependencies])
         log_operation(
@@ -39,6 +40,7 @@ def install_plugins_dependencies(dependencies: list[str], module_name: str):
 
 
 def register_plugin_in_database(module_name: str, function_name: str, meta: dict):
+    """Register a plugin in the database."""
 
     with Session(engine) as session:
 
@@ -80,6 +82,7 @@ def register_plugin_in_database(module_name: str, function_name: str, meta: dict
 
 
 def should_skip_file(filename: str) -> bool:
+    """Check if the file should be skipped based on its name."""
     return not filename.endswith(".py") or filename in IGNORE_FILES
 
 
@@ -121,12 +124,19 @@ def process_plugin_module(module, install_plugin_deps: bool = True, save_in_db=T
 
 
 def setup_plugins(install_plugin_deps=True, save_in_db=True):
+    """Setup plugins by importing them and processing their functions."""
 
     plugins_dir = os.path.dirname(__file__)
 
     for filename in os.listdir(plugins_dir):
 
         if should_skip_file(filename):
+            log_operation(
+                operation="READ",
+                model="Plugin",
+                status="SKIPPED",
+                detail=f"Skipping file {filename}",
+            )
             continue
 
         module_name = f"app.plugins.{filename[:-3]}"
@@ -135,6 +145,13 @@ def setup_plugins(install_plugin_deps=True, save_in_db=True):
             module = importlib.import_module(module_name)
 
             if not hasattr(module, "bill_flow"):
+                log_operation(
+                    operation="READ",
+                    model="Plugin",
+                    status="FAILED",
+                    detail=f"Plugin {module_name} does not have a 'bill_flow' attribute.",
+                    level="warning",
+                )
                 continue
 
             process_plugin_module(module, install_plugin_deps, save_in_db)
