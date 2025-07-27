@@ -1,9 +1,10 @@
-from datetime import date, datetime, timezone
+from datetime import date
 from typing import List
 
 from dateutil.relativedelta import relativedelta
 from sqlmodel import Session, select
 
+from app.clock import clock
 from app.database.deps import engine
 from app.database.models import (
     Account,
@@ -51,7 +52,7 @@ def create_invoice(account_id: int, subscription_ids: List[int], skip_validation
         detail=f"for account id {account_id} and subscription ids {subscription_ids}",
     )
 
-    now = datetime.now(timezone.utc)
+    now = clock.now(full=True)
 
     with Session(engine) as session:
 
