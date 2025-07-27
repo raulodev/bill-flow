@@ -68,7 +68,7 @@ def test_valid_subscriptions_for_invoice(client: TestClient, db):
         response = client.post("/v1/subscriptions", json=payload, headers=AUTH_HEADERS)
         assert response.status_code == 201
 
-    today = datetime.now(timezone.utc).today().replace(microsecond=0)
+    today = datetime.now(timezone.utc)
 
     subscriptions = valid_subscriptions_for_invoice(today)
 

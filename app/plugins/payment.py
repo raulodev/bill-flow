@@ -33,9 +33,9 @@ import pluggy
 
 
 __setup__ = {
-    "name": "Payment with Stripe",
-    "specname": "stripe_payment",
-    "dependencies": [],  # ["requests>=2.0"]
+    "name": "Default Payment",
+    "description": "Default payment plugin",
+    "dependencies": [],  # example: ["requests>=2.0"]
 }
 
 

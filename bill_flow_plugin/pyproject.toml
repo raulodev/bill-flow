@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+[project]
+name = "bill-flow"
+version = "0.0.1"
+authors = [{ name = "Raul Cobiellas", email = "raulodev@gmail.com" }]
+description = "A small example package"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+dependencies = ["pluggy==1.6.0"]
+
+[project.urls]
+Homepage = "https://github.com/raulodev/bill-flow"
+Issues = "https://github.com/raulodev/bill-flow/issues"

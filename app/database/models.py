@@ -46,6 +46,12 @@ class TenantBase(SQLModel):
 class Tenant(TenantBase, CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="user.id")
+    accounts: List["Account"] = Relationship(
+        back_populates="tenant", cascade_delete=True
+    )
+    custom_fields: List["CustomField"] = Relationship(
+        back_populates="tenant", cascade_delete=True
+    )
 
 
 class TenantUpdate(SQLModel):
@@ -86,7 +92,12 @@ class Account(AccountBase, CreatedUpdatedFields, table=True):
     credit_history: List["CreditHistory"] = Relationship(
         back_populates="account", cascade_delete=True
     )
+    payment_method: List["PaymentMethod"] = Relationship(
+        back_populates="account", cascade_delete=True
+    )
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    tenant: Tenant = Relationship(back_populates="accounts")
+    invoices: List["Invoice"] = Relationship(back_populates="account")
 
 
 class AccountPublic(AccountBase):
@@ -97,6 +108,37 @@ class AccountPublic(AccountBase):
 class AccountPublicWithCustomFieldsAndAddress(AccountPublic):
     custom_fields: List["CustomFieldPublic"] = []
     address: Optional["AddressPublic"] = None
+
+
+class PaymentMethodBase(SQLModel):
+    account_id: int
+    plugin_id: int
+    is_default: bool = True
+    external_id: str | None = Field(default=None, unique=True, index=True)
+
+
+class PaymentMethod(PaymentMethodBase, CreatedUpdatedFields, table=True):
+
+    __tablename__ = "payment_method"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    account: Account = Relationship(back_populates="payment_method")
+    plugin_id: int = Field(foreign_key="plugin.id", ondelete="CASCADE")
+    plugin: "Plugin" = Relationship(back_populates="payment_method")
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    custom_fields: List["CustomField"] = Relationship(
+        back_populates="payment_method", cascade_delete=True
+    )
+
+
+class PaymentMethodPublic(PaymentMethodBase):
+    id: int
+
+
+class PaymentMethodPublicWithAccountAndPlugin(PaymentMethodBase):
+    account: "AccountPublic"
+    plugin: "PluginPublic"
 
 
 class CreditReason(str, Enum):
@@ -189,7 +231,15 @@ class CustomField(CustomFieldBase, CreatedUpdatedFields, table=True):
     subscription: Optional["Subscription"] = Relationship(
         back_populates="custom_fields"
     )
+    payment_method_id: int | None = Field(
+        default=None, foreign_key="payment_method.id", ondelete="CASCADE"
+    )
+    payment_method: Optional["PaymentMethod"] = Relationship(
+        back_populates="custom_fields"
+    )
+
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    tenant: Tenant = Relationship(back_populates="custom_fields")
 
 
 class CustomFieldPublic(CustomFieldBase):
@@ -214,6 +264,7 @@ class Product(ProductBase, CreatedUpdatedFields, table=True):
     custom_fields: List["CustomField"] = Relationship(
         back_populates="product", cascade_delete=True
     )
+    invoice_items: List["InvoiceItem"] = Relationship(back_populates="product")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     subscriptions: list["SubscriptionProduct"] = Relationship(back_populates="product")
 
@@ -307,6 +358,7 @@ class Subscription(SubscriptionBase, CreatedUpdatedFields, table=True):
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     charged_through_date: date | None = Field(default=None)
     next_billing_date: date | None = Field(default=None)
+    invoice_items: List["InvoiceItem"] = Relationship(back_populates="subscription")
 
 
 class SubscriptionCreate(SubscriptionBase):
@@ -350,27 +402,94 @@ class SubscriptionPhase(CreatedUpdatedFields, table=True):
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
 
 
+class InvoicePaymentStatus(str, Enum):
+    PENDING = "PENDING"
+    PAID = "PAID"
+    PARTIALLY_PAID = "PARTIALLY_PAID"
+    CANCELLED = "CANCELLED"
+
+
 class Invoice(CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    account: Account = Relationship(back_populates="invoices")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     items: List["InvoiceItem"] = Relationship(back_populates="invoice")
+    payments: List["Payment"] = Relationship(back_populates="invoice")
+    payment_status: InvoicePaymentStatus = Field(default=InvoicePaymentStatus.PENDING)
+
+
+class InvoiceItemPaymentStatus(str, Enum):
+    PENDING = "PENDING"
+    PAID = "PAID"
 
 
 class InvoiceItem(CreatedUpdatedFields, table=True):
+
+    __tablename__ = "invoice_item"
+
     id: Optional[int] = Field(default=None, primary_key=True)
     invoice_id: int = Field(foreign_key="invoice.id", ondelete="CASCADE")
     invoice: Invoice = Relationship(back_populates="items")
     subscription_id: int = Field(foreign_key="subscription.id", ondelete="CASCADE")
+    subscription: "Subscription" = Relationship(back_populates="invoice_items")
     product_id: int = Field(foreign_key="product.id", ondelete="CASCADE")
+    product: "Product" = Relationship(back_populates="invoice_items")
     quantity: int = Field(default=1)
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     amount: Decimal = Field(decimal_places=3, ge=0)
+    payment_status: InvoiceItemPaymentStatus = Field(
+        default=InvoiceItemPaymentStatus.PENDING
+    )
+    payment_item: "PaymentItem" = Relationship(back_populates="invoice_item")
 
 
 class Plugin(CreatedUpdatedFields, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(index=True)
-    module: str = Field(unique=True)
-    specname: str | None = Field(default=None)
+    path: str = Field(index=True, unique=True)
+    hook_caller: str | None = Field(default=None)
+    description: str | None = Field(default=None, max_length=255)
+    payment_method: PaymentMethod = Relationship(back_populates="plugin")
+
+
+class PluginPublic(SQLModel):
+    id: int
+    name: str
+    path: str
+    hook_caller: str | None = None
+    description: str | None = None
+
+
+class PaymentStatus(str, Enum):
+    PENDING = "PENDING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
+class Payment(CreatedUpdatedFields, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    invoice_id: int = Field(foreign_key="invoice.id", ondelete="CASCADE")
+    invoice: Invoice = Relationship(back_populates="payments")
+    amount: Decimal = Field(decimal_places=3, ge=0)
+    status: PaymentStatus = Field(default=PaymentStatus.PENDING)
+    payment_method: str | None = Field(default=None, index=True)
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    items: List["PaymentItem"] = Relationship(back_populates="payment")
+    message: str | None = Field(default=None)
+
+
+class PaymentItem(CreatedUpdatedFields, table=True):
+
+    __tablename__ = "payment_item"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    payment_id: int = Field(foreign_key="payment.id", ondelete="CASCADE")
+    payment: Payment = Relationship(back_populates="items")
+    invoice_item_id: int = Field(foreign_key="invoice_item.id", ondelete="CASCADE")
+    invoice_item: InvoiceItem = Relationship(back_populates="payment_item")
+    tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
+    account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
+    amount: Decimal = Field(decimal_places=3, ge=0)
