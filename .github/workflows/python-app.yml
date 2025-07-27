@@ -38,7 +38,7 @@ jobs:
           pytest
       - name: Generate coverage report
         run: |
-          pytest tests/ --cov --cov-branch --cov-report=xml
+          pytest --cov=app --cov-branch --cov-report=xml tests/
       - name: Upload results to Codecov
         uses: codecov/codecov-action@v5
         with:
