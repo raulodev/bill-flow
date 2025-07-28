@@ -24,6 +24,7 @@ from app.logging import log_operation
 from app.responses import responses
 from app.subscriptions.billing_day import get_billing_day
 from app.subscriptions.phases import create_phases
+from app.tasks import generate_subscription_invoice
 
 router = APIRouter(prefix="/subscriptions", responses=responses)
 
@@ -173,6 +174,8 @@ async def create_subscription(
             tenant_id=current_tenant.id,
             detail=subscription_db.model_dump(),
         )
+
+        generate_subscription_invoice.delay(subscription_db.id)
 
         return subscription_db
     except IntegrityError as exc:

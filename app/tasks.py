@@ -35,6 +35,19 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
 
 @celery_app.task
 def generate_subscription_invoice(subscription_id: int):
+    """
+    Generates an invoice for a given subscription if it is valid.
+
+    Args:
+        subscription_id (int): The ID of the subscription for which to generate an invoice.
+
+    Logs:
+        - A warning if the subscription is not valid for invoicing.
+        - A success message if the invoice is created successfully.
+
+    Returns:
+        None
+    """
 
     with Session(engine) as session:
 
