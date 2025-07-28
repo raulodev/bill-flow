@@ -12,7 +12,7 @@ from app.logging import log_operation
 
 plugin_manager = pluggy.PluginManager("bill-flow")
 
-IGNORE_FILES = ["__init__.py", "api.py", "setup.py"]
+IGNORE_FILES = ["__init__.py", "__pycache__"]
 
 
 def install_plugins_dependencies(dependencies: list[str], module_name: str):
@@ -126,7 +126,7 @@ def process_plugin_module(module, install_plugin_deps: bool = True, save_in_db=T
 def setup_plugins(install_plugin_deps=True, save_in_db=True):
     """Setup plugins by importing them and processing their functions."""
 
-    plugins_dir = os.path.dirname(__file__)
+    plugins_dir = os.path.dirname(__file__).replace("app/plugins", "plugins")
 
     for filename in os.listdir(plugins_dir):
 
@@ -139,7 +139,7 @@ def setup_plugins(install_plugin_deps=True, save_in_db=True):
             )
             continue
 
-        module_name = f"app.plugins.{filename[:-3]}"
+        module_name = f"plugins.{filename[:-3]}".replace("/", ".")
 
         try:
             module = importlib.import_module(module_name)
