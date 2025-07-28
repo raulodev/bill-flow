@@ -6,6 +6,7 @@ from celery import Celery
 from celery.schedules import crontab
 from sqlmodel import Session, select
 
+from app.clock import clock
 from app.database.deps import engine
 from app.database.models import (
     Invoice,
@@ -14,18 +15,17 @@ from app.database.models import (
     Payment,
     PaymentItem,
 )
-from app.invoices.create import create_invoice
-from app.invoices.utils import valid_subscriptions_for_invoice
 from app.logging import log_operation
 from app.plugins.setup import plugin_manager, setup_plugins
+from app.services.invoice_service import InvoicesService
 from app.settings import CELERY_BROKER_URL, TIME_ZONE
 
-app = Celery("tasks", broker=CELERY_BROKER_URL)
+celery_app = Celery("tasks", broker=CELERY_BROKER_URL)
 
-app.conf.timezone = TIME_ZONE
+celery_app.conf.timezone = TIME_ZONE
 
 
-@app.on_after_configure.connect
+@celery_app.on_after_configure.connect
 def setup_periodic_tasks(sender: Celery, **kwargs):
 
     sender.add_periodic_task(
@@ -33,22 +33,59 @@ def setup_periodic_tasks(sender: Celery, **kwargs):
     )
 
 
-@app.task
+@celery_app.task
+def generate_subscription_invoice(subscription_id: int):
+
+    with Session(engine) as session:
+
+        invoice_service = InvoicesService(session)
+
+        subscription = invoice_service.is_subscription_valid_for_invoice(
+            subscription_id
+        )
+
+        if not subscription:
+            log_operation(
+                operation="CREATE",
+                model="Invoice",
+                status="FAILED",
+                detail=f"subscription id {subscription_id} is not valid for invoice",
+                level="warning",
+            )
+            return
+
+        invoice_id = invoice_service.create_invoice(
+            subscription.account_id, [subscription_id], skip_validation=True
+        )
+
+        log_operation(
+            operation="CREATE",
+            model="Invoice",
+            status="SUCCESS",
+            detail=f"invoice {invoice_id} created for account id {subscription.account_id} subscription id {subscription_id}",
+        )
+
+
+@celery_app.task
 def generate_invoices():
 
-    now = datetime.datetime.now(datetime.timezone.utc)
+    with Session(engine) as session:
 
-    subscriptions = valid_subscriptions_for_invoice(now)
+        invoice_service = InvoicesService(session)
 
-    group_by = defaultdict(list)  # Group by user id
-    for s in subscriptions:
-        group_by[s.account_id].append(s.id)
+        subscriptions = invoice_service.valid_subscriptions_for_invoice()
 
-    for account_id, subscription_ids in group_by.items():
-        create_invoice(account_id, subscription_ids, skip_validation=True)
+        group_by = defaultdict(list)  # Group by user id
+        for s in subscriptions:
+            group_by[s.account_id].append(s.id)
+
+        for account_id, subscription_ids in group_by.items():
+            invoice_service.create_invoice(
+                account_id, subscription_ids, skip_validation=True
+            )
 
 
-@app.task
+@celery_app.task
 def process_invoice_payments(invoice_id: int, invoice_items_ids: List[int] = None):
 
     setup_plugins(install_plugin_deps=False, save_in_db=False)
