@@ -156,11 +156,11 @@ def setup_plugins(install_plugin_deps=True, save_in_db=True):
 
             process_plugin_module(module, install_plugin_deps, save_in_db)
 
-        except pluggy.PluginValidationError as e:
+        except (pluggy.PluginValidationError, ValueError) as e:
             log_operation(
                 operation="READ",
                 model="Plugins",
                 status="FAILED",
                 detail=f"Error importing plugin {module_name}: {e}",
-                level="error",
+                level="warning",
             )
