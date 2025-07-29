@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from functools import wraps
@@ -184,4 +184,4 @@ class PaymentResult:
 
     amount: Decimal
     message: str
-    paid_items: List[PaidItem] = []
+    paid_items: List[PaidItem] = field(default_factory=list)
