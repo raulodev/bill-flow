@@ -472,7 +472,7 @@ class Payment(CreatedUpdatedFields, table=True):
     invoice: Invoice = Relationship(back_populates="payments")
     amount: Decimal = Field(decimal_places=3, ge=0)
     status: PaymentStatus = Field(default=PaymentStatus.PENDING)
-    payment_method: str | None = Field(default=None, index=True)
+    payment_method_id: int = Field(foreign_key="payment_method.id")
     tenant_id: int = Field(foreign_key="tenant.id", ondelete="CASCADE")
     account_id: int = Field(foreign_key="account.id", ondelete="CASCADE")
     items: List["PaymentItem"] = Relationship(back_populates="payment")
