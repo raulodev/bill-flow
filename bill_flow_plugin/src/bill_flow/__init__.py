@@ -178,6 +178,7 @@ class PaidItem:
     amount: Decimal
 
 
+@dataclass
 class PaymentResult:
     """Use to indicate the result of a payment"""
 
