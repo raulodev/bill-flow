@@ -1,5 +1,8 @@
+from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
 from functools import wraps
-from typing import Callable, Literal
+from typing import Callable, List, Literal
 
 import pluggy
 
@@ -92,3 +95,61 @@ class BillFlow:
 
 
 bill_flow = BillFlow()
+
+
+@dataclass
+class CustomFieldData:
+    name: str
+    value: str
+
+
+@dataclass
+class ProductData:
+    id: int
+    name: str
+    price: Decimal
+    custom_fields: List[CustomFieldData]
+
+
+@dataclass
+class SubscriptionData:
+    id: int
+    custom_fields: List[CustomFieldData]
+
+
+@dataclass
+class InvoiceItemData:
+    id: int
+    quantity: int
+    amount: Decimal
+    product: ProductData
+    subscription: SubscriptionData
+
+
+@dataclass
+class AccountData:
+    id: int
+    tenant_id: int
+    external_id: str
+    first_name: str
+    last_name: str
+    email: str
+    phone: str
+    timezone: str
+    credit: Decimal
+    custom_fields: List[CustomFieldData]
+
+
+@dataclass
+class TenantData:
+    id: int
+    name: str
+    external_id: str
+    api_key: str
+    custom_fields: List[CustomFieldData]
+
+
+@dataclass
+class InvoiceData:
+    id: int
+    created: datetime
