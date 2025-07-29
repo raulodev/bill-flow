@@ -1,5 +1,4 @@
 build:
-	rm -rf dist
 	python -m build
 
 publish:
