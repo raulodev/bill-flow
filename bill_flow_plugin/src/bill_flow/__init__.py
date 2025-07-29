@@ -99,12 +99,16 @@ bill_flow = BillFlow()
 
 @dataclass
 class CustomFieldData:
+    """Dataclass to represent custom fields"""
+
     name: str
     value: str
 
 
 @dataclass
 class ProductData:
+    """Dataclass to represent products"""
+
     id: int
     name: str
     price: Decimal
@@ -113,12 +117,16 @@ class ProductData:
 
 @dataclass
 class SubscriptionData:
+    """Dataclass to represent subscriptions"""
+
     id: int
     custom_fields: List[CustomFieldData]
 
 
 @dataclass
 class InvoiceItemData:
+    """Dataclass to represent invoice items"""
+
     id: int
     quantity: int
     amount: Decimal
@@ -128,6 +136,8 @@ class InvoiceItemData:
 
 @dataclass
 class AccountData:
+    """Dataclass to represent accounts"""
+
     id: int
     tenant_id: int
     external_id: str
@@ -142,6 +152,8 @@ class AccountData:
 
 @dataclass
 class TenantData:
+    """Dataclass to represent tenants"""
+
     id: int
     name: str
     external_id: str
@@ -151,5 +163,24 @@ class TenantData:
 
 @dataclass
 class InvoiceData:
+    """Dataclass to represent invoices"""
+
     id: int
     created: datetime
+
+
+@dataclass
+class PaidItem:
+    """Use to indicate a partial payment, for example, "
+    "of all the items on the invoice, only this one was paid."""
+
+    id: int
+    amount: Decimal
+
+
+class PaymentResult:
+    """Use to indicate the result of a payment"""
+
+    amount: Decimal
+    message: str
+    paid_items: List[PaidItem] = []
